@@ -60,10 +60,10 @@ LRT_report = function(OR=FALSE, lmer=TRUE) {
   }
   BF = exp((result$BIC[1] - result$BIC[2])/2)
   print(paste('BIC-based Bayes Factor:', printBF(BF)))
-  
-  # Assess model assumptions
-  par(mfrow=c(1, 2))
-  qqPlot(fit$residuals)  # qq plot
-  hist(fit$residuals, freq=F, breaks=50)
-  curve(dnorm(x, 0, sd(fit$residuals)), add=T)
+  # 
+  # # Assess model assumptions
+  # par(mfrow=c(1, 2))
+  # qqPlot(fit$residuals)  # qq plot
+  # hist(fit$residuals, freq=F, breaks=50)
+  # curve(dnorm(x, 0, sd(fit$residuals)), add=T)
 }

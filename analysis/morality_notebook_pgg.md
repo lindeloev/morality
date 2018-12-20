@@ -17,7 +17,7 @@ Load appropriate stuff:
 
     library(tidyverse)
     library(lme4)
-    library(kableExtra)
+    #library(kableExtra)
 
     source('misc/functions utility.R')
     source('misc/functions inference.R')  # Contains LRT and LRT_binom
@@ -55,58 +55,17 @@ Descriptives
         n=n(),
         age_years = sprintf('%.1f (%.1f)', mean(age), sd(age)),
         males = sprintf('%i (%.1f %%)', sum(gender=='male'), 100*sum(gender=='male')/n())
-      ) %>%
-      kable() %>% 
-      kable_styling(bootstrap_options = "striped", full_width = F)
+      ) #%>%
 
-<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:right;">
-exp
-</th>
-<th style="text-align:right;">
-n
-</th>
-<th style="text-align:left;">
-age\_years
-</th>
-<th style="text-align:left;">
-males
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
-81
-</td>
-<td style="text-align:left;">
-23.4 (2.9)
-</td>
-<td style="text-align:left;">
-40 (49.4 %)
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:right;">
-159
-</td>
-<td style="text-align:left;">
-24.2 (4.3)
-</td>
-<td style="text-align:left;">
-72 (45.3 %)
-</td>
-</tr>
-</tbody>
-</table>
+    ## # A tibble: 2 x 4
+    ##     exp     n age_years  males      
+    ##   <dbl> <int> <chr>      <chr>      
+    ## 1     1    81 23.4 (2.9) 40 (49.4 %)
+    ## 2     2   159 24.2 (4.3) 72 (45.3 %)
+
+      # kable() %>% 
+      # kable_styling(bootstrap_options = "striped", full_width = F)
+
     # Supplementary table: stratified by level and stimType descriptives
     x = D_id %>%  # Per-person
       group_by(stimType, level) %>%
@@ -123,223 +82,24 @@ males
         recall = sprintf('%.1f%%', mean(recallProportion)*100)
       )
 
-    bind_cols(x, y[,3:4]) %>%
-      kable() %>% 
-      kable_styling(bootstrap_options = "striped", full_width = F)
+    bind_cols(x, y[,3:4])# %>%
 
-<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:left;">
-stimType
-</th>
-<th style="text-align:left;">
-level
-</th>
-<th style="text-align:right;">
-n
-</th>
-<th style="text-align:left;">
-males
-</th>
-<th style="text-align:left;">
-age\_years
-</th>
-<th style="text-align:left;">
-arithmetic
-</th>
-<th style="text-align:left;">
-recall
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-Faces
-</td>
-<td style="text-align:left;">
-1-3
-</td>
-<td style="text-align:right;">
-38
-</td>
-<td style="text-align:left;">
-18 (47.4 %)
-</td>
-<td style="text-align:left;">
-24.3 (3.6)
-</td>
-<td style="text-align:left;">
-90.0%
-</td>
-<td style="text-align:left;">
-92.3%
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Faces
-</td>
-<td style="text-align:left;">
-3-5
-</td>
-<td style="text-align:right;">
-30
-</td>
-<td style="text-align:left;">
-15 (50.0 %)
-</td>
-<td style="text-align:left;">
-24.2 (3.1)
-</td>
-<td style="text-align:left;">
-84.7%
-</td>
-<td style="text-align:left;">
-82.6%
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Faces
-</td>
-<td style="text-align:left;">
-5-7
-</td>
-<td style="text-align:right;">
-33
-</td>
-<td style="text-align:left;">
-15 (45.5 %)
-</td>
-<td style="text-align:left;">
-23.6 (2.2)
-</td>
-<td style="text-align:left;">
-89.8%
-</td>
-<td style="text-align:left;">
-69.3%
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Faces
-</td>
-<td style="text-align:left;">
-1-7
-</td>
-<td style="text-align:right;">
-50
-</td>
-<td style="text-align:left;">
-24 (48.0 %)
-</td>
-<td style="text-align:left;">
-23.3 (2.5)
-</td>
-<td style="text-align:left;">
-87.7%
-</td>
-<td style="text-align:left;">
-81.8%
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Letters
-</td>
-<td style="text-align:left;">
-1-3
-</td>
-<td style="text-align:right;">
-20
-</td>
-<td style="text-align:left;">
-5 (25.0 %)
-</td>
-<td style="text-align:left;">
-24.2 (2.7)
-</td>
-<td style="text-align:left;">
-88.8%
-</td>
-<td style="text-align:left;">
-85.5%
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Letters
-</td>
-<td style="text-align:left;">
-3-5
-</td>
-<td style="text-align:right;">
-21
-</td>
-<td style="text-align:left;">
-10 (47.6 %)
-</td>
-<td style="text-align:left;">
-25.6 (9.3)
-</td>
-<td style="text-align:left;">
-81.0%
-</td>
-<td style="text-align:left;">
-89.0%
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Letters
-</td>
-<td style="text-align:left;">
-5-7
-</td>
-<td style="text-align:right;">
-17
-</td>
-<td style="text-align:left;">
-9 (52.9 %)
-</td>
-<td style="text-align:left;">
-23.2 (1.9)
-</td>
-<td style="text-align:left;">
-89.0%
-</td>
-<td style="text-align:left;">
-84.7%
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-Letters
-</td>
-<td style="text-align:left;">
-1-7
-</td>
-<td style="text-align:right;">
-31
-</td>
-<td style="text-align:left;">
-16 (51.6 %)
-</td>
-<td style="text-align:left;">
-23.4 (3.4)
-</td>
-<td style="text-align:left;">
-82.1%
-</td>
-<td style="text-align:left;">
-83.3%
-</td>
-</tr>
-</tbody>
-</table>
+    ## # A tibble: 8 x 7
+    ## # Groups:   stimType [?]
+    ##   stimType level     n males       age_years  arithmetic recall
+    ##   <fct>    <fct> <int> <chr>       <chr>      <chr>      <chr> 
+    ## 1 Faces    1-3      38 18 (47.4 %) 24.3 (3.6) 90.0%      92.3% 
+    ## 2 Faces    3-5      30 15 (50.0 %) 24.2 (3.1) 84.7%      82.6% 
+    ## 3 Faces    5-7      33 15 (45.5 %) 23.6 (2.2) 89.8%      69.3% 
+    ## 4 Faces    1-7      50 24 (48.0 %) 23.3 (2.5) 87.7%      81.8% 
+    ## 5 Letters  1-3      20 5 (25.0 %)  24.2 (2.7) 88.8%      85.5% 
+    ## 6 Letters  3-5      21 10 (47.6 %) 25.6 (9.3) 81.0%      89.0% 
+    ## 7 Letters  5-7      17 9 (52.9 %)  23.2 (1.9) 89.0%      84.7% 
+    ## 8 Letters  1-7      31 16 (51.6 %) 23.4 (3.4) 82.1%      83.3%
+
+      # kable() %>% 
+      # kable_styling(bootstrap_options = "striped", full_width = F)
+
 Concurrent load: Figure 2
 -------------------------
 
@@ -479,8 +239,6 @@ Effect of CS stimulus type:
     ## span:stimTypeLetters   0.5059617  -0.5960414  1.6079648
     ## [1] "BIC-based Bayes Factor: 61.9*"
 
-![](morality_notebook_pgg_files/figure-markdown_strict/unnamed-chunk-3-1.png)
-
 Effect of difficulty level:
 
     LRT(D, 
@@ -513,8 +271,6 @@ Effect of difficulty level:
     ## span:level5-7 -0.1862893  -2.295503  1.9229248
     ## span:level1-7 -0.2889102  -1.661187  1.0833668
     ## [1] "BIC-based Bayes Factor: 726666.2*"
-
-![](morality_notebook_pgg_files/figure-markdown_strict/unnamed-chunk-4-1.png)
 
 Depletion: Figure 3
 -------------------
@@ -622,8 +378,6 @@ Without easy-letters:
     ## level1-7:time_secs   0.007147797  2.984473e-03  0.011311122
     ## [1] "BIC-based Bayes Factor: 1462.5*"
 
-![](morality_notebook_pgg_files/figure-markdown_strict/unnamed-chunk-5-1.png)
-
 Only easy-letters
 
     LRT(subset(D, (level == '1-3' & stimType=='Letters')), 
@@ -646,5 +400,3 @@ Only easy-letters
     ## (Intercept) 53.48901338 42.89724212 64.080784635
     ## time_secs   -0.01091131 -0.01471201 -0.007110603
     ## [1] "BIC-based Bayes Factor: 165052.8"
-
-![](morality_notebook_pgg_files/figure-markdown_strict/unnamed-chunk-6-1.png)
