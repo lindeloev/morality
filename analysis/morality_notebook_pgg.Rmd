@@ -6,7 +6,7 @@ date: June, 2018
 always_allow_html: yes
 
 output:
-  md_document
+  github_document
 
 ---
 <!--
@@ -87,7 +87,7 @@ bind_cols(x, y[,3:4])# %>%
 ```
 
 ## Concurrent load: Figure 2
-```{r figure2, cache=TRUE, fig.height=5, fig.width=4}
+```{r figure2, fig.height=5, fig.width=4}
 # Fit a simple mixed model to show the results while subtracting individual differences
 fit_full = lmer(pggInvest ~ span*stimType + (1|id), D)
 
@@ -134,7 +134,7 @@ ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, u
 
 ## Concurrent load: inference
 Main test:
-```{r pgg load, cache=TRUE}
+```{r pgg load}
 LRT(D, 
     pggInvest ~ span + stimType + time_hours + (span|id), 
     pggInvest ~    1 + stimType + time_hours + (span|id))
@@ -163,7 +163,7 @@ LRT(D,
 
 
 ## Depletion: Figure 3
-```{r figure3, cache=TRUE}
+```{r figure3}
 # Get subject random effects. Intercept t=0, but keep level-specific offsets
 fit = lmer(pggInvest ~ time_secs + level + stimType + (1|id), D)
 x = ranef(fit)
@@ -190,7 +190,7 @@ ggsave('figures/Figure 3 - PGG and CS depletion.png', figure3, width=8, height=3
 
 ## Depletion on PGG investment: Inference
 Main analysis. Notice that span is not nested in the random effect for `id` because it may be confounded by the between-subject variable `level`.
-```{r pgg objective depletion, cache=TRUE}
+```{r pgg objective depletion}
 LRT(D, pggInvest ~ level * time_secs + stimType + (1|id),
        pggInvest ~ level + time_secs + stimType + (1|id))
 ```

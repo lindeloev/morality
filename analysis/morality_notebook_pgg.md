@@ -1,3 +1,8 @@
+Morality in the time of cognitive famine - analysis
+================
+Jonas Kristoffer Lindeløv
+June, 2018
+
 <!--
 # TO DO
 * Number of trials per subject as a criterion?
@@ -5,8 +10,7 @@
 About
 =====
 
-This is the analysis that accompanies the paper "Morality in the time of
-cognitive famine" by Panos, Jonas, Michaela, and....
+This is the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and....
 
 To be continuted...
 
@@ -15,17 +19,20 @@ Setting up
 
 Load appropriate stuff:
 
-    library(tidyverse)
-    library(lme4)
-    #library(kableExtra)
+``` r
+library(tidyverse)
+library(lme4)
+#library(kableExtra)
 
-    source('misc/functions utility.R')
-    source('misc/functions inference.R')  # Contains LRT and LRT_binom
+source('misc/functions utility.R')
+source('misc/functions inference.R')  # Contains LRT and LRT_binom
+```
 
-You could redo the preprocessing of the original data if you wanted to.
-It saves the data.frames which are loaded in the sections below.
+You could redo the preprocessing of the original data if you wanted to. It saves the data.frames which are loaded in the sections below.
 
-    source('preprocess PGG.R')
+``` r
+source('preprocess PGG.R')
+```
 
 Experiment 1 and 2: Public Goods Game and cooperation
 =====================================================
@@ -33,29 +40,32 @@ Experiment 1 and 2: Public Goods Game and cooperation
 Load data
 ---------
 
-... and remove two subjects who did not follow instructions (noted by
-the research assistant)
+... and remove two subjects who did not follow instructions (noted by the research assistant)
 
-    # Load the data.frame (not in csv because the matrix columns would be lost)
-    D_pgg = readRDS('data/pgg.Rda')
-    D_pgg = subset(D_pgg, condition=='experiment')  # Remove practice, etc.
-    D_pgg = select(D_pgg, -encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't be using them
-    D_pgg = droplevels(D_pgg)
-    D = D_pgg  # For convenience
+``` r
+# Load the data.frame (not in csv because the matrix columns would be lost)
+D_pgg = readRDS('data/pgg.Rda')
+D_pgg = subset(D_pgg, condition=='experiment')  # Remove practice, etc.
+D_pgg = select(D_pgg, -encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't be using them
+D_pgg = droplevels(D_pgg)
+D = D_pgg  # For convenience
+```
 
 Descriptives
 ------------
 
-    D_id = D[!duplicated(D$id), ]
+``` r
+D_id = D[!duplicated(D$id), ]
 
-    # Per-group descriptives for paper
-    D_id %>%
-      group_by(exp) %>%
-      summarise(
-        n=n(),
-        age_years = sprintf('%.1f (%.1f)', mean(age), sd(age)),
-        males = sprintf('%i (%.1f %%)', sum(gender=='male'), 100*sum(gender=='male')/n())
-      ) #%>%
+# Per-group descriptives for paper
+D_id %>%
+  group_by(exp) %>%
+  summarise(
+    n=n(),
+    age_years = sprintf('%.1f (%.1f)', mean(age), sd(age)),
+    males = sprintf('%i (%.1f %%)', sum(gender=='male'), 100*sum(gender=='male')/n())
+  ) #%>%
+```
 
     ## # A tibble: 2 x 4
     ##     exp     n age_years  males      
@@ -63,26 +73,28 @@ Descriptives
     ## 1     1    81 23.4 (2.9) 40 (49.4 %)
     ## 2     2   159 24.2 (4.3) 72 (45.3 %)
 
-      # kable() %>% 
-      # kable_styling(bootstrap_options = "striped", full_width = F)
+``` r
+  # kable() %>% 
+  # kable_styling(bootstrap_options = "striped", full_width = F)
 
-    # Supplementary table: stratified by level and stimType descriptives
-    x = D_id %>%  # Per-person
-      group_by(stimType, level) %>%
-      summarise(
-        n=n(),
-        males = sprintf('%i (%.1f %%)', sum(gender=='male'), 100*sum(gender=='male')/n()),
-        age_years = sprintf('%.1f (%.1f)', mean(age), sd(age))
-      )
+# Supplementary table: stratified by level and stimType descriptives
+x = D_id %>%  # Per-person
+  group_by(stimType, level) %>%
+  summarise(
+    n=n(),
+    males = sprintf('%i (%.1f %%)', sum(gender=='male'), 100*sum(gender=='male')/n()),
+    age_years = sprintf('%.1f (%.1f)', mean(age), sd(age))
+  )
 
-    y = D %>%  # All trials
-      group_by(stimType, level) %>%
-      summarise(
-        arithmetic = sprintf('%.1f%%', mean(equationCorrectness)*100),
-        recall = sprintf('%.1f%%', mean(recallProportion)*100)
-      )
+y = D %>%  # All trials
+  group_by(stimType, level) %>%
+  summarise(
+    arithmetic = sprintf('%.1f%%', mean(equationCorrectness)*100),
+    recall = sprintf('%.1f%%', mean(recallProportion)*100)
+  )
 
-    bind_cols(x, y[,3:4])# %>%
+bind_cols(x, y[,3:4])# %>%
+```
 
     ## # A tibble: 8 x 7
     ## # Groups:   stimType [?]
@@ -97,64 +109,74 @@ Descriptives
     ## 7 Letters  5-7      17 9 (52.9 %)  23.2 (1.9) 89.0%      84.7% 
     ## 8 Letters  1-7      31 16 (51.6 %) 23.4 (3.4) 82.1%      83.3%
 
-      # kable() %>% 
-      # kable_styling(bootstrap_options = "striped", full_width = F)
+``` r
+  # kable() %>% 
+  # kable_styling(bootstrap_options = "striped", full_width = F)
+```
 
 Concurrent load: Figure 2
 -------------------------
 
-    # Fit a simple mixed model to show the results while subtracting individual differences
-    fit_full = lmer(pggInvest ~ span*stimType + (1|id), D)
+``` r
+# Fit a simple mixed model to show the results while subtracting individual differences
+fit_full = lmer(pggInvest ~ span*stimType + (1|id), D)
 
-    # Add the fits to the data
-    x = ranef(fit_full)  # random effects for each subject
-    D$pggInvestOffset = mapvalues2(D$id, from=rownames(x$id), to=x$id$`(Intercept)`)  # map it unto data
-    df_tmp = subset(D, span==1 & level=='1-7')
-    y_offset = mean(df_tmp$pggInvest - df_tmp$pggInvestOffset, na.rm=T)
-    D$pggInvestZeroCenter = D$pggInvest - D$pggInvestOffset - y_offset
+# Add the fits to the data
+x = ranef(fit_full)  # random effects for each subject
+D$pggInvestOffset = mapvalues2(D$id, from=rownames(x$id), to=x$id$`(Intercept)`)  # map it unto data
+df_tmp = subset(D, span==1 & level=='1-7')
+y_offset = mean(df_tmp$pggInvest - df_tmp$pggInvestOffset, na.rm=T)
+D$pggInvestZeroCenter = D$pggInvest - D$pggInvestOffset - y_offset
 
-    # Plot the figure
-    figure2 = ggplot(D, aes(x=span, y=pggInvestZeroCenter, color=level)) + 
-      stat_summary(fun.data='mean_cl_boot', position=position_dodge(0.5), size=0.7) +
-      stat_summary(fun.y=mean, geom="line", position=position_dodge(0.5), lwd=1.3) +
-      #facet_grid(~stimType) +
-      labs(title='WM load and cooperation', y='Relative Public Goods Game Investment', x='Complex Span') + 
-      scale_x_continuous(breaks=1:7) + scale_y_continuous(breaks=seq(-100, 100, 2))
+# Plot the figure
+figure2 = ggplot(D, aes(x=span, y=pggInvestZeroCenter, color=level)) + 
+  stat_summary(fun.data='mean_cl_boot', position=position_dodge(0.5), size=0.7) +
+  stat_summary(fun.y=mean, geom="line", position=position_dodge(0.5), lwd=1.3) +
+  #facet_grid(~stimType) +
+  labs(title='WM load and cooperation', y='Relative Public Goods Game Investment', x='Complex Span') + 
+  scale_x_continuous(breaks=1:7) + scale_y_continuous(breaks=seq(-100, 100, 2))
 
-    figure2 = style_my_plot(figure2)
+figure2 = style_my_plot(figure2)
 
-    # Save it
-    ggsave('figures/Figure 2 - PGG and CS span.png', figure2, width=6, height=6, units='cm', dpi=300, scale=1.7)
+# Save it
+ggsave('figures/Figure 2 - PGG and CS span.png', figure2, width=6, height=6, units='cm', dpi=300, scale=1.7)
 
-    # Show it 
-    figure2
+# Show it 
+figure2
+```
 
-![](morality_notebook_pgg_files/figure-markdown_strict/figure2-1.png)
+![](morality_notebook_pgg_files/figure-markdown_github/figure2-1.png)
 
 Supplementary figure:
 
-    figureS2 = ggplot(D, aes(x=span, y=pggInvest, color=level)) + 
-      stat_summary(fun.data='mean_cl_boot', position=position_dodge(0.5), size=0.3) +
-      stat_summary(fun.y=mean, geom="line", position=position_dodge(0.5)) +
-      facet_grid(~stimType) +
-      labs(title='WM load and cooperation', y='Public Goods Game Investment', x='Complex Span') + 
-      scale_x_continuous(breaks=1:7) + scale_y_continuous(breaks=seq(-100, 100, 2))
+``` r
+figureS2 = ggplot(D, aes(x=span, y=pggInvest, color=level)) + 
+  stat_summary(fun.data='mean_cl_boot', position=position_dodge(0.5), size=0.3) +
+  stat_summary(fun.y=mean, geom="line", position=position_dodge(0.5)) +
+  facet_grid(~stimType) +
+  labs(title='WM load and cooperation', y='Public Goods Game Investment', x='Complex Span') + 
+  scale_x_continuous(breaks=1:7) + scale_y_continuous(breaks=seq(-100, 100, 2))
 
-    figureS2 = style_my_plot(figureS2)
-    figureS2
+figureS2 = style_my_plot(figureS2)
+figureS2
+```
 
-![](morality_notebook_pgg_files/figure-markdown_strict/unnamed-chunk-2-1.png)
+![](morality_notebook_pgg_files/figure-markdown_github/unnamed-chunk-2-1.png)
 
-    ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, units='cm', dpi=300, scale=1.7)
+``` r
+ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, units='cm', dpi=300, scale=1.7)
+```
 
 Concurrent load: inference
 --------------------------
 
 Main test:
 
-    LRT(D, 
-        pggInvest ~ span + stimType + time_hours + (span|id), 
-        pggInvest ~    1 + stimType + time_hours + (span|id))
+``` r
+LRT(D, 
+    pggInvest ~ span + stimType + time_hours + (span|id), 
+    pggInvest ~    1 + stimType + time_hours + (span|id))
+```
 
     ## Loading required package: carData
 
@@ -190,33 +212,22 @@ Main test:
     ## time_hours      -14.2485176 -19.376459 -9.1205765
     ## [1] "BIC-based Bayes Factor: 9895.5"
 
-![](morality_notebook_pgg_files/figure-markdown_strict/pgg%20load-1.png)
-
-    # Bayesian version (takes a looooooong time to run!)
-    # Needs well-considered priors
-    # library(brms)
-    # full = brm(pggInvest ~ span + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
-    # null = brm(pggInvest ~ 1 + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
-    # bayes_factor(full, null)
+``` r
+# Bayesian version (takes a looooooong time to run!)
+# Needs well-considered priors
+# library(brms)
+# full = brm(pggInvest ~ span + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
+# null = brm(pggInvest ~ 1 + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
+# bayes_factor(full, null)
+```
 
 Effect of CS stimulus type:
 
-    LRT(D, 
-        pggInvest ~ span * stimType + time_hours + (span|id), 
-        pggInvest ~ span + stimType + time_hours + (span|id))
-
-    ## Loading required package: carData
-
-    ## 
-    ## Attaching package: 'car'
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     recode
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     some
+``` r
+LRT(D, 
+    pggInvest ~ span * stimType + time_hours + (span|id), 
+    pggInvest ~ span + stimType + time_hours + (span|id))
+```
 
     ## Data: D
     ## Models:
@@ -241,9 +252,11 @@ Effect of CS stimulus type:
 
 Effect of difficulty level:
 
-    LRT(D, 
-        pggInvest ~ span * level + (1+span|id),
-        pggInvest ~ span + level + (1+span|id))
+``` r
+LRT(D, 
+    pggInvest ~ span * level + (1+span|id),
+    pggInvest ~ span + level + (1+span|id))
+```
 
     ## Data: D
     ## Models:
@@ -275,39 +288,43 @@ Effect of difficulty level:
 Depletion: Figure 3
 -------------------
 
-    # Get subject random effects. Intercept t=0, but keep level-specific offsets
-    fit = lmer(pggInvest ~ time_secs + level + stimType + (1|id), D)
-    x = ranef(fit)
+``` r
+# Get subject random effects. Intercept t=0, but keep level-specific offsets
+fit = lmer(pggInvest ~ time_secs + level + stimType + (1|id), D)
+x = ranef(fit)
 
-    # map it unto data
-    D$pggInvestOffset = mapvalues2(D$id, from=rownames(x$id), to=x$id$`(Intercept)`)
+# map it unto data
+D$pggInvestOffset = mapvalues2(D$id, from=rownames(x$id), to=x$id$`(Intercept)`)
 
-    # Plot linearly with data
-    figure3 = ggplot(D, aes(x=time_secs/60, y=pggInvest - pggInvestOffset, color=level, fill=level)) +  # plot data with subject-specific offsets
-      stat_smooth(method='glm') +  # Make it linear
-      stat_summary_bin(fun.y=mean, geom='point', binwidth=2, size=2) +
-      facet_grid(stimType~level) + 
-      
-      # Styling
-      labs(title='Depletion and cooperation', y='Public Goods Game Investment', x='Minutes elapsed') + 
-      scale_x_continuous(breaks=seq(0, 20, 5)) + coord_cartesian(xlim=c(0, 20), ylim=c(35, 60)) + scale_y_continuous(breaks=seq(-100, 100, 5))
+# Plot linearly with data
+figure3 = ggplot(D, aes(x=time_secs/60, y=pggInvest - pggInvestOffset, color=level, fill=level)) +  # plot data with subject-specific offsets
+  stat_smooth(method='glm') +  # Make it linear
+  stat_summary_bin(fun.y=mean, geom='point', binwidth=2, size=2) +
+  facet_grid(stimType~level) + 
+  
+  # Styling
+  labs(title='Depletion and cooperation', y='Public Goods Game Investment', x='Minutes elapsed') + 
+  scale_x_continuous(breaks=seq(0, 20, 5)) + coord_cartesian(xlim=c(0, 20), ylim=c(35, 60)) + scale_y_continuous(breaks=seq(-100, 100, 5))
 
-    figure3 = style_my_plot(figure3)
-    figure3
+figure3 = style_my_plot(figure3)
+figure3
+```
 
-![](morality_notebook_pgg_files/figure-markdown_strict/figure3-1.png)
+![](morality_notebook_pgg_files/figure-markdown_github/figure3-1.png)
 
-    ggsave('figures/Figure 3 - PGG and CS depletion.png', figure3, width=8, height=3.8, units='cm', dpi=300, scale=2)
+``` r
+ggsave('figures/Figure 3 - PGG and CS depletion.png', figure3, width=8, height=3.8, units='cm', dpi=300, scale=2)
+```
 
 Depletion on PGG investment: Inference
 --------------------------------------
 
-Main analysis. Notice that span is not nested in the random effect for
-`id` because it may be confounded by the between-subject variable
-`level`.
+Main analysis. Notice that span is not nested in the random effect for `id` because it may be confounded by the between-subject variable `level`.
 
-    LRT(D, pggInvest ~ level * time_secs + stimType + (1|id),
-           pggInvest ~ level + time_secs + stimType + (1|id))
+``` r
+LRT(D, pggInvest ~ level * time_secs + stimType + (1|id),
+       pggInvest ~ level + time_secs + stimType + (1|id))
+```
 
     ## Data: D
     ## Models:
@@ -340,12 +357,13 @@ Main analysis. Notice that span is not nested in the random effect for
     ## level1-7:time_secs  0.009181861  5.357628e-03  0.013006094
     ## [1] "BIC-based Bayes Factor: 2.6*"
 
-![](morality_notebook_pgg_files/figure-markdown_strict/pgg%20objective%20depletion-1.png)
 Without easy-letters:
 
-    LRT(subset(D, !(level == '1-3' & stimType=='Letters')), 
-        pggInvest ~ level * time_secs + stimType + (1|id),
-        pggInvest ~ level + time_secs + stimType + (1|id))
+``` r
+LRT(subset(D, !(level == '1-3' & stimType=='Letters')), 
+    pggInvest ~ level * time_secs + stimType + (1|id),
+    pggInvest ~ level + time_secs + stimType + (1|id))
+```
 
     ## Data: D
     ## Models:
@@ -380,9 +398,11 @@ Without easy-letters:
 
 Only easy-letters
 
-    LRT(subset(D, (level == '1-3' & stimType=='Letters')), 
-        pggInvest ~ time_secs + (1|id),
-        pggInvest ~         1 + (1|id))
+``` r
+LRT(subset(D, (level == '1-3' & stimType=='Letters')), 
+    pggInvest ~ time_secs + (1|id),
+    pggInvest ~         1 + (1|id))
+```
 
     ## Data: D
     ## Models:
