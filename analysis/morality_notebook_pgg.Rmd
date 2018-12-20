@@ -1,12 +1,13 @@
 ---
-title: "Morality in the time of cognitive famine - analysis"
+title: "Morality in the time of cognitive famine - Public Goods Game"
 author: Jonas Kristoffer Lindeløv
-date: June, 2018
+date: December, 2018
 
 always_allow_html: yes
 
 output:
-  github_document
+  github_document:
+    toc: true
 
 ---
 <!--
@@ -15,9 +16,7 @@ output:
 -->
 
 # About
-This is the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and....
-
-To be continuted...
+This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 1 and 2** using the Public Goods Game to study prosociality.
 
 
 # Setting up
@@ -37,9 +36,7 @@ source('preprocess PGG.R')
 ```
 
 
-# Experiment 1 and 2: Public Goods Game and cooperation
-
-## Load data
+# Load data
 ... and remove two subjects who did not follow instructions (noted by the research assistant)
 ```{r load data}
 # Load the data.frame (not in csv because the matrix columns would be lost)
@@ -50,7 +47,7 @@ D_pgg = droplevels(D_pgg)
 D = D_pgg  # For convenience
 ```
 
-## Descriptives
+# Descriptives
 ```{r exp12 descriptives}
 D_id = D[!duplicated(D$id), ]
 
@@ -86,7 +83,7 @@ bind_cols(x, y[,3:4])# %>%
   # kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
-## Concurrent load: Figure 2
+# Concurrent load: Figure 2
 ```{r figure2, fig.height=5, fig.width=4}
 # Fit a simple mixed model to show the results while subtracting individual differences
 fit_full = lmer(pggInvest ~ span*stimType + (1|id), D)
@@ -132,7 +129,7 @@ ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, u
 
 
 
-## Concurrent load: inference
+# Concurrent load: inference
 Main test:
 ```{r pgg load}
 LRT(D, 
@@ -162,7 +159,7 @@ LRT(D,
 ```
 
 
-## Depletion: Figure 3
+# Depletion: Figure 3
 ```{r figure3}
 # Get subject random effects. Intercept t=0, but keep level-specific offsets
 fit = lmer(pggInvest ~ time_secs + level + stimType + (1|id), D)
@@ -188,7 +185,7 @@ ggsave('figures/Figure 3 - PGG and CS depletion.png', figure3, width=8, height=3
 ```
 
 
-## Depletion on PGG investment: Inference
+# Depletion on PGG investment: Inference
 Main analysis. Notice that span is not nested in the random effect for `id` because it may be confounded by the between-subject variable `level`.
 ```{r pgg objective depletion}
 LRT(D, pggInvest ~ level * time_secs + stimType + (1|id),
@@ -209,3 +206,7 @@ LRT(subset(D, (level == '1-3' & stimType=='Letters')),
     pggInvest ~ time_secs + (1|id),
     pggInvest ~         1 + (1|id))
 ```
+
+
+# Supplementary stuff
+See the notebook for the dots task for more supplementary analyses.

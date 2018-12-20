@@ -1,7 +1,16 @@
-Morality in the time of cognitive famine - analysis
+Morality in the time of cognitive famine - Public Goods Game
 ================
 Jonas Kristoffer Lindeløv
-June, 2018
+December, 2018
+
+-   [About](#about)
+-   [Setting up](#setting-up)
+-   [Load data](#load-data)
+-   [Descriptives](#descriptives)
+-   [Concurrent load: Figure 2](#concurrent-load-figure-2)
+-   [Concurrent load: inference](#concurrent-load-inference)
+-   [Depletion: Figure 3](#depletion-figure-3)
+-   [Depletion on PGG investment: Inference](#depletion-on-pgg-investment-inference)
 
 <!--
 # TO DO
@@ -10,9 +19,7 @@ June, 2018
 About
 =====
 
-This is the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and....
-
-To be continuted...
+This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 1 and 2** using the Public Goods Game.
 
 Setting up
 ==========
@@ -34,11 +41,8 @@ You could redo the preprocessing of the original data if you wanted to. It saves
 source('preprocess PGG.R')
 ```
 
-Experiment 1 and 2: Public Goods Game and cooperation
-=====================================================
-
 Load data
----------
+=========
 
 ... and remove two subjects who did not follow instructions (noted by the research assistant)
 
@@ -52,7 +56,7 @@ D = D_pgg  # For convenience
 ```
 
 Descriptives
-------------
+============
 
 ``` r
 D_id = D[!duplicated(D$id), ]
@@ -115,7 +119,7 @@ bind_cols(x, y[,3:4])# %>%
 ```
 
 Concurrent load: Figure 2
--------------------------
+=========================
 
 ``` r
 # Fit a simple mixed model to show the results while subtracting individual differences
@@ -168,7 +172,7 @@ ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, u
 ```
 
 Concurrent load: inference
---------------------------
+==========================
 
 Main test:
 
@@ -286,7 +290,7 @@ LRT(D,
     ## [1] "BIC-based Bayes Factor: 726666.2*"
 
 Depletion: Figure 3
--------------------
+===================
 
 ``` r
 # Get subject random effects. Intercept t=0, but keep level-specific offsets
@@ -317,7 +321,7 @@ ggsave('figures/Figure 3 - PGG and CS depletion.png', figure3, width=8, height=3
 ```
 
 Depletion on PGG investment: Inference
---------------------------------------
+======================================
 
 Main analysis. Notice that span is not nested in the random effect for `id` because it may be confounded by the between-subject variable `level`.
 
