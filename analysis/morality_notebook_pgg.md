@@ -3,26 +3,31 @@ Morality in the time of cognitive famine - Public Goods Game
 Jonas Kristoffer Lindeløv
 December, 2018
 
--   [About](#about)
--   [Setting up](#setting-up)
--   [Load data](#load-data)
--   [Descriptives](#descriptives)
--   [Concurrent load: Figure 2](#concurrent-load-figure-2)
--   [Concurrent load: inference](#concurrent-load-inference)
--   [Depletion: Figure 3](#depletion-figure-3)
--   [Depletion on PGG investment: Inference](#depletion-on-pgg-investment-inference)
+  - [About](#about)
+  - [Setting up](#setting-up)
+  - [Load data](#load-data)
+  - [Descriptives](#descriptives)
+  - [Concurrent load: Figure 2](#concurrent-load-figure-2)
+  - [Concurrent load: inference](#concurrent-load-inference)
+  - [Figure 3: Effect of time](#figure-3-effect-of-time)
+  - [Depletion on PGG investment:
+    Inference](#depletion-on-pgg-investment-inference)
+  - [Supplementary stuff](#supplementary-stuff)
 
 <!--
 # TO DO
 * Number of trials per subject as a criterion?
 -->
-About
-=====
 
-This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 1 and 2** using the Public Goods Game.
+# About
 
-Setting up
-==========
+This is part of the analysis that accompanies the paper “Morality in the
+time of cognitive famine” by Panos, Jonas, Michaela, and others. You are
+now looking at the analysis of **experiment 1** using the Public Goods
+Game to study cooperation and Operation Span task to load working
+memory.
+
+# Setting up
 
 Load appropriate stuff:
 
@@ -35,34 +40,39 @@ source('misc/functions utility.R')
 source('misc/functions inference.R')  # Contains LRT and LRT_binom
 ```
 
-You could redo the preprocessing of the original data if you wanted to. It saves the data.frames which are loaded in the sections below.
+You could redo the preprocessing of the original data if you wanted to.
+It saves the .Rda files which are loaded in the sections below.
 
 ``` r
 source('preprocess PGG.R')
 ```
 
-Load data
-=========
+# Load data
 
-... and remove two subjects who did not follow instructions (noted by the research assistant)
+… and remove two subjects who did not follow instructions (noted by the
+research assistant)
 
 ``` r
 # Load the data.frame (not in csv because the matrix columns would be lost)
-D_pgg = readRDS('data/pgg.Rda')
-D_pgg = subset(D_pgg, condition=='experiment')  # Remove practice, etc.
-D_pgg = select(D_pgg, -encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't be using them
-D_pgg = droplevels(D_pgg)
-D = D_pgg  # For convenience
+D = readRDS('data/pgg.Rda') %>%
+  filter(condition == 'experiment') %>%  # Remove practice, etc.
+  select(-encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't be using them
 ```
 
-Descriptives
-============
+# Descriptives
+
+For manuscript:
 
 ``` r
 D_id = D[!duplicated(D$id), ]
 
 # Per-group descriptives for paper
-D_id %>%
+D %>%
+  # One row per participant
+  group_by(id) %>%
+  slice(1) %>%
+  
+  # Per-experiment group
   group_by(exp) %>%
   summarise(
     n=n(),
@@ -80,9 +90,18 @@ D_id %>%
 ``` r
   # kable() %>% 
   # kable_styling(bootstrap_options = "striped", full_width = F)
+```
 
-# Supplementary table: stratified by level and stimType descriptives
-x = D_id %>%  # Per-person
+Supplementary per-group info stratified by level and stimType
+descriptives:
+
+``` r
+x = D %>%  
+  # One row per participant
+  group_by(id) %>%
+  slice(1) %>%
+  
+  # Per stimType-level combination
   group_by(stimType, level) %>%
   summarise(
     n=n(),
@@ -101,7 +120,7 @@ bind_cols(x, y[,3:4])# %>%
 ```
 
     ## # A tibble: 8 x 7
-    ## # Groups:   stimType [?]
+    ## # Groups:   stimType [2]
     ##   stimType level     n males       age_years  arithmetic recall
     ##   <fct>    <fct> <int> <chr>       <chr>      <chr>      <chr> 
     ## 1 Faces    1-3      38 18 (47.4 %) 24.3 (3.6) 90.0%      92.3% 
@@ -118,8 +137,7 @@ bind_cols(x, y[,3:4])# %>%
   # kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
-Concurrent load: Figure 2
-=========================
+# Concurrent load: Figure 2
 
 ``` r
 # Fit a simple mixed model to show the results while subtracting individual differences
@@ -128,7 +146,7 @@ fit_full = lmer(pggInvest ~ span*stimType + (1|id), D)
 # Add the fits to the data
 x = ranef(fit_full)  # random effects for each subject
 D$pggInvestOffset = mapvalues2(D$id, from=rownames(x$id), to=x$id$`(Intercept)`)  # map it unto data
-df_tmp = subset(D, span==1 & level=='1-7')
+df_tmp = filter(D, span==1 & level=='1-7')
 y_offset = mean(df_tmp$pggInvest - df_tmp$pggInvestOffset, na.rm=T)
 D$pggInvestZeroCenter = D$pggInvest - D$pggInvestOffset - y_offset
 
@@ -142,14 +160,12 @@ figure2 = ggplot(D, aes(x=span, y=pggInvestZeroCenter, color=level)) +
 
 figure2 = style_my_plot(figure2)
 
-# Save it
+# Show it and save it
 ggsave('figures/Figure 2 - PGG and CS span.png', figure2, width=6, height=6, units='cm', dpi=300, scale=1.7)
-
-# Show it 
 figure2
 ```
 
-![](morality_notebook_pgg_files/figure-markdown_github/figure2-1.png)
+![](morality_notebook_pgg_files/figure-gfm/figure2-1.png)<!-- -->
 
 Supplementary figure:
 
@@ -162,38 +178,30 @@ figureS2 = ggplot(D, aes(x=span, y=pggInvest, color=level)) +
   scale_x_continuous(breaks=1:7) + scale_y_continuous(breaks=seq(-100, 100, 2))
 
 figureS2 = style_my_plot(figureS2)
+
+# Show it and save it
+ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, units='cm', dpi=300, scale=1.7)
 figureS2
 ```
 
-![](morality_notebook_pgg_files/figure-markdown_github/unnamed-chunk-2-1.png)
+![](morality_notebook_pgg_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-``` r
-ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, units='cm', dpi=300, scale=1.7)
-```
+# Concurrent load: inference
 
-Concurrent load: inference
-==========================
+Main test. Output of `LRT` consists of:
 
-Main test:
+1.  LRT test to obtain p-value
+2.  Parameters from `lmer` of the full model
+3.  Bootstrapped parameter estimates and intervals
+4.  BIC-based Bayes Factor based on the BIC values from (1)
+
+<!-- end list -->
 
 ``` r
 LRT(D, 
     pggInvest ~ span + stimType + time_hours + (span|id), 
     pggInvest ~    1 + stimType + time_hours + (span|id))
 ```
-
-    ## Loading required package: carData
-
-    ## 
-    ## Attaching package: 'car'
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     recode
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     some
 
     ## Data: D
     ## Models:
@@ -205,33 +213,54 @@ LRT(D,
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ##                    Estimate Std. Error    t value
-    ## (Intercept)      54.7362254  2.5260937 21.6683276
-    ## span             -1.4923343  0.2759033 -5.4089035
-    ## stimTypeLetters   0.9039497  3.6677525  0.2464588
-    ## time_hours      -14.2485176  2.6163446 -5.4459637
+    ## (Intercept)      54.7360929  2.5260510 21.6686417
+    ## span             -1.4923308  0.2758984 -5.4089872
+    ## stimTypeLetters   0.9040891  3.6677542  0.2464967
+    ## time_hours      -14.2504376  2.6164431 -5.4464924
     ##                                  2.5 %     97.5 %
-    ## (Intercept)      54.7362254  49.785173 59.6872780
-    ## span             -1.4923343  -2.033095 -0.9515738
-    ## stimTypeLetters   0.9039497  -6.284713  8.0926126
-    ## time_hours      -14.2485176 -19.376459 -9.1205765
-    ## [1] "BIC-based Bayes Factor: 9895.5"
+    ## (Intercept)      54.7360929  49.785124 59.6870618
+    ## span             -1.4923308  -2.033082 -0.9515799
+    ## stimTypeLetters   0.9040891  -6.284577  8.0927552
+    ## time_hours      -14.2504376 -19.378572 -9.1223033
+    ## [1] "BIC-based Bayes Factor: 9897.4"
+
+I would looove to go proper Bayesian, but it is too slow:
 
 ``` r
-# Bayesian version (takes a looooooong time to run!)
-# Needs well-considered priors
+# # Bayesian version (takes a looooooong time to run!)
+# # Needs well-considered priors
 # library(brms)
-# full = brm(pggInvest ~ span + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
-# null = brm(pggInvest ~ 1 + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
+# full = brm(pggInvest ~ span + stimType + time_hours + (span|id), D, chains=1, cores=1, iter=650, warmup=150, save_all_pars=TRUE)
+# null = brm(pggInvest ~    1 + stimType + time_hours + (span|id), D, chains=1, cores=1, iter=650, warmup=150, save_all_pars=TRUE)
 # bayes_factor(full, null)
+# loo(full, null)
+
+
+# # Disregard the many responses at 0 and 100 as being from a different process
+# D$pggInvest_scaled = D$pggInvest / 100  # Scale down to [0, 1]; effectively making this equivalent to a stretched beta
+# 
+# Q = bf(
+#   pggInvest_scaled ~ span + (1|id),
+#   phi ~ span,
+#   zoi ~ span,
+#   coi ~ span,
+#   family = zero_one_inflated_beta()
+# )
+# 
+# Q_fit = brm(Q, D)
 ```
 
-Effect of CS stimulus type:
+Effect of CS stimulus type - does it change (interact with) the slope?
 
 ``` r
 LRT(D, 
     pggInvest ~ span * stimType + time_hours + (span|id), 
     pggInvest ~ span + stimType + time_hours + (span|id))
 ```
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.00449378
+    ## (tol = 0.002, component 1)
 
     ## Data: D
     ## Models:
@@ -241,56 +270,63 @@ LRT(D,
     ## fit.null  8 78694 78750 -39339    78678                         
     ## fit.full  9 78695 78759 -39339    78677 0.8079      1     0.3687
     ##                         Estimate Std. Error    t value
-    ## (Intercept)           55.5956888  2.7011955 20.5818828
-    ## span                  -1.6952891  0.3558676 -4.7638201
-    ## stimTypeLetters       -1.2486390  4.3818656 -0.2849560
-    ## time_hours           -14.2605085  2.6163296 -5.4505781
-    ## span:stimTypeLetters   0.5059617  0.5622568  0.8998766
+    ## (Intercept)           55.5956326  2.7015446 20.5792020
+    ## span                  -1.6953185  0.3558821 -4.7637084
+    ## stimTypeLetters       -1.2484452  4.3824391 -0.2848745
+    ## time_hours           -14.2624145  2.6164197 -5.4511189
+    ## span:stimTypeLetters   0.5059985  0.5622799  0.8999050
     ##                                        2.5 %     97.5 %
-    ## (Intercept)           55.5956888  50.3014430 60.8899347
-    ## span                  -1.6952891  -2.3927768 -0.9978015
-    ## stimTypeLetters       -1.2486390  -9.8369377  7.3396597
-    ## time_hours           -14.2605085 -19.3884202 -9.1325968
-    ## span:stimTypeLetters   0.5059617  -0.5960414  1.6079648
+    ## (Intercept)           55.5956326  50.3007024 60.8905628
+    ## span                  -1.6953185  -2.3928346 -0.9978024
+    ## stimTypeLetters       -1.2484452  -9.8378680  7.3409776
+    ## time_hours           -14.2624145 -19.3905028 -9.1343262
+    ## span:stimTypeLetters   0.5059985  -0.5960499  1.6080469
     ## [1] "BIC-based Bayes Factor: 61.9*"
 
-Effect of difficulty level:
+Effect of difficulty level - does it change (interact with) the slope?
 
 ``` r
 LRT(D, 
-    pggInvest ~ span * level + (1+span|id),
-    pggInvest ~ span + level + (1+span|id))
+    pggInvest ~ span * level + stimType + time_hours + (span|id),
+    pggInvest ~ span + level + stimType + time_hours + (span|id))
 ```
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.0131107
+    ## (tol = 0.002, component 1)
 
     ## Data: D
     ## Models:
-    ## fit.null: pggInvest ~ span + level + (1 + span | id)
-    ## fit.full: pggInvest ~ span * level + (1 + span | id)
+    ## fit.null: pggInvest ~ span + level + stimType + time_hours + (span | id)
+    ## fit.full: pggInvest ~ span * level + stimType + time_hours + (span | id)
     ##          Df   AIC   BIC logLik deviance  Chisq Chi Df Pr(>Chisq)
-    ## fit.null  9 78725 78789 -39354    78707                         
-    ## fit.full 12 78731 78816 -39353    78707 0.1844      3     0.9801
-    ##                 Estimate Std. Error    t value
-    ## (Intercept)   53.6809800  4.0132275 13.3760123
-    ## span          -1.3047155  0.5884244 -2.2173035
-    ## level3-5       3.9014284  6.3486302  0.6145307
-    ## level5-7       1.7116150  7.6440063  0.2239160
-    ## level1-7       0.5430098  5.2932280  0.1025858
-    ## span:level3-5 -0.2968346  0.9528663 -0.3115175
-    ## span:level5-7 -0.1862893  1.0761494 -0.1731073
-    ## span:level1-7 -0.2889102  0.7001542 -0.4126380
-    ##                               2.5 %     97.5 %
-    ## (Intercept)   53.6809800  45.815199 61.5467613
-    ## span          -1.3047155  -2.458006 -0.1514249
-    ## level3-5       3.9014284  -8.541658 16.3445150
-    ## level5-7       1.7116150 -13.270362 16.6935920
-    ## level1-7       0.5430098  -9.831526 10.9175461
-    ## span:level3-5 -0.2968346  -2.164418  1.5707492
-    ## span:level5-7 -0.1862893  -2.295503  1.9229248
-    ## span:level1-7 -0.2889102  -1.661187  1.0833668
-    ## [1] "BIC-based Bayes Factor: 726666.2*"
+    ## fit.null 11 78699 78777 -39339    78677                         
+    ## fit.full 14 78705 78804 -39339    78677 0.1877      3     0.9796
+    ##                    Estimate Std. Error    t value
+    ## (Intercept)      53.6394110  4.2050081 12.7560779
+    ## span             -1.2860481  0.5879584 -2.1873113
+    ## level3-5          3.6946521  6.3497203  0.5818606
+    ## level5-7          1.4161995  7.6368465  0.1854430
+    ## level1-7          0.0845384  5.2932111  0.0159711
+    ## stimTypeLetters   0.8266560  3.6690749  0.2253037
+    ## time_hours      -14.2816674  2.6170508 -5.4571609
+    ## span:level3-5    -0.2694583  0.9519306 -0.2830651
+    ## span:level5-7    -0.1592111  1.0749421 -0.1481113
+    ## span:level1-7    -0.2954593  0.6997137 -0.4222574
+    ##                                  2.5 %     97.5 %
+    ## (Intercept)      53.6394110  45.397747 61.8810754
+    ## span             -1.2860481  -2.438425 -0.1336708
+    ## level3-5          3.6946521  -8.750571 16.1398753
+    ## level5-7          1.4161995 -13.551744 16.3841435
+    ## level1-7          0.0845384 -10.289965 10.4590416
+    ## stimTypeLetters   0.8266560  -6.364599  8.0179106
+    ## time_hours      -14.2816674 -19.410993 -9.1523420
+    ## span:level3-5    -0.2694583  -2.135208  1.5962914
+    ## span:level5-7    -0.1592111  -2.266059  1.9476368
+    ## span:level1-7    -0.2954593  -1.666873  1.0759544
+    ## [1] "BIC-based Bayes Factor: 725454.7*"
 
-Depletion: Figure 3
-===================
+# Figure 3: Effect of time
 
 ``` r
 # Get subject random effects. Intercept t=0, but keep level-specific offsets
@@ -307,120 +343,139 @@ figure3 = ggplot(D, aes(x=time_secs/60, y=pggInvest - pggInvestOffset, color=lev
   facet_grid(stimType~level) + 
   
   # Styling
-  labs(title='Depletion and cooperation', y='Public Goods Game Investment', x='Minutes elapsed') + 
-  scale_x_continuous(breaks=seq(0, 20, 5)) + coord_cartesian(xlim=c(0, 20), ylim=c(35, 60)) + scale_y_continuous(breaks=seq(-100, 100, 5))
+  labs(title='Load over time and cooperation', y='Public Goods Game Investment', x='Minutes elapsed') + 
+  scale_x_continuous(breaks=seq(0, 18, 5)) + coord_cartesian(xlim=c(0, 20), ylim=c(35, 60)) + scale_y_continuous(breaks=seq(-100, 100, 5))
 
 figure3 = style_my_plot(figure3)
 figure3
 ```
 
-![](morality_notebook_pgg_files/figure-markdown_github/figure3-1.png)
+![](morality_notebook_pgg_files/figure-gfm/figure3-1.png)<!-- -->
 
 ``` r
-ggsave('figures/Figure 3 - PGG and CS depletion.png', figure3, width=8, height=3.8, units='cm', dpi=300, scale=2)
+ggsave('figures/Figure 3 - PGG and CS over time.png', figure3, width=8, height=4.5, units='cm', dpi=300, scale=2.5)
 ```
 
-Depletion on PGG investment: Inference
-======================================
+# Depletion on PGG investment: Inference
 
-Main analysis. Notice that span is not nested in the random effect for `id` because it may be confounded by the between-subject variable `level`.
+Main analysis:
 
 ``` r
-LRT(D, pggInvest ~ level * time_secs + stimType + (1|id),
-       pggInvest ~ level + time_secs + stimType + (1|id))
+LRT(D, pggInvest ~ level * time_hours + stimType + (span|id),
+       pggInvest ~ level + time_hours + stimType + (span|id))
 ```
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.0022154
+    ## (tol = 0.002, component 1)
 
     ## Data: D
     ## Models:
-    ## fit.null: pggInvest ~ level + time_secs + stimType + (1 | id)
-    ## fit.full: pggInvest ~ level * time_secs + stimType + (1 | id)
+    ## fit.null: pggInvest ~ level + time_hours + stimType + (span | id)
+    ## fit.full: pggInvest ~ level * time_hours + stimType + (span | id)
     ##          Df   AIC   BIC logLik deviance Chisq Chi Df Pr(>Chisq)    
-    ## fit.null  8 78828 78885 -39406    78812                            
-    ## fit.full 11 78809 78887 -39393    78787 25.26      3  1.363e-05 ***
+    ## fit.null 10 78724 78795 -39352    78704                            
+    ## fit.full 13 78704 78796 -39339    78678 26.31      3  8.213e-06 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ##                        Estimate  Std. Error    t value
-    ## (Intercept)        55.444243782 3.861950686 14.3565385
-    ## level3-5           -3.665460394 5.378759618 -0.6814695
-    ## level5-7           -7.189269432 5.463215932 -1.3159409
-    ## level1-7           -8.513000367 4.820445572 -1.7660194
-    ## time_secs          -0.008028252 0.001135143 -7.0724593
-    ## stimTypeLetters     0.948898477 3.674907945  0.2582101
-    ## level3-5:time_secs  0.006295427 0.001916623  3.2846450
-    ## level5-7:time_secs  0.004232218 0.002252147  1.8791929
-    ## level1-7:time_secs  0.009181861 0.001951175  4.7058111
-    ##                                         2.5 %       97.5 %
-    ## (Intercept)        55.444243782  4.787496e+01 63.013528037
-    ## level3-5           -3.665460394 -1.420764e+01  6.876714738
-    ## level5-7           -7.189269432 -1.789698e+01  3.518437035
-    ## level1-7           -8.513000367 -1.796090e+01  0.934899344
-    ## time_secs          -0.008028252 -1.025309e-02 -0.005803412
-    ## stimTypeLetters     0.948898477 -6.253789e+00  8.151585696
-    ## level3-5:time_secs  0.006295427  2.538914e-03  0.010051939
-    ## level5-7:time_secs  0.004232218 -1.819084e-04  0.008646345
-    ## level1-7:time_secs  0.009181861  5.357628e-03  0.013006094
-    ## [1] "BIC-based Bayes Factor: 2.6*"
+    ##                        Estimate Std. Error    t value
+    ## (Intercept)          49.9552782   3.856065 12.9549893
+    ## level3-5              0.6303226   5.281219  0.1193517
+    ## level5-7             -3.2501141   5.358142 -0.6065748
+    ## level1-7             -2.9971303   4.740535 -0.6322347
+    ## time_hours          -28.9234278   4.035228 -7.1677299
+    ## stimTypeLetters       1.1873674   3.677469  0.3228763
+    ## level3-5:time_hours  22.9996175   6.813312  3.3756883
+    ## level5-7:time_hours  15.4157862   8.014337  1.9235260
+    ## level1-7:time_hours  33.4083173   6.977951  4.7876975
+    ##                                       2.5 %     97.5 %
+    ## (Intercept)          49.9552782  42.3975301  57.513026
+    ## level3-5              0.6303226  -9.7206759  10.981321
+    ## level5-7             -3.2501141 -13.7518803   7.251652
+    ## level1-7             -2.9971303 -12.2884073   6.294147
+    ## time_hours          -28.9234278 -36.8323303 -21.014525
+    ## stimTypeLetters       1.1873674  -6.0203393   8.395074
+    ## level3-5:time_hours  22.9996175   9.6457716  36.353463
+    ## level5-7:time_hours  15.4157862  -0.2920264  31.123599
+    ## level1-7:time_hours  33.4083173  19.7317850  47.084850
+    ## [1] "BIC-based Bayes Factor: 1.5*"
 
 Without easy-letters:
 
 ``` r
-LRT(subset(D, !(level == '1-3' & stimType=='Letters')), 
-    pggInvest ~ level * time_secs + stimType + (1|id),
-    pggInvest ~ level + time_secs + stimType + (1|id))
+LRT(filter(D, !(level == '1-3' & stimType=='Letters')), 
+    pggInvest ~ level * time_hours + stimType + (span|id),
+    pggInvest ~ level + time_hours + stimType + (span|id))
 ```
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.00548566
+    ## (tol = 0.002, component 1)
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.00274035
+    ## (tol = 0.002, component 1)
 
     ## Data: D
     ## Models:
-    ## fit.null: pggInvest ~ level + time_secs + stimType + (1 | id)
-    ## fit.full: pggInvest ~ level * time_secs + stimType + (1 | id)
+    ## fit.null: pggInvest ~ level + time_hours + stimType + (span | id)
+    ## fit.full: pggInvest ~ level * time_hours + stimType + (span | id)
     ##          Df   AIC   BIC logLik deviance  Chisq Chi Df Pr(>Chisq)   
-    ## fit.null  8 65014 65069 -32499    64998                            
-    ## fit.full 11 65008 65084 -32493    64986 12.036      3   0.007261 **
+    ## fit.null 10 64901 64970 -32440    64881                            
+    ## fit.full 13 64894 64983 -32434    64868 12.675      3   0.005396 **
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ##                         Estimate  Std. Error    t value
-    ## (Intercept)         56.622102716 4.553802697 12.4340263
-    ## level3-5            -5.737233075 6.294645259 -0.9114466
-    ## level5-7            -9.103231680 6.294795084 -1.4461522
-    ## level1-7           -10.534705893 5.787009914 -1.8204057
-    ## time_secs           -0.005958517 0.001453873 -4.0983753
-    ## stimTypeLetters      3.112804053 4.244514594  0.7333710
-    ## level3-5:time_secs   0.004228751 0.002093726  2.0197255
-    ## level5-7:time_secs   0.002170217 0.002390614  0.9078072
-    ## level1-7:time_secs   0.007147797 0.002124184  3.3649613
-    ##                                          2.5 %       97.5 %
-    ## (Intercept)         56.622102716  4.769681e+01 65.547391994
-    ## level3-5            -5.737233075 -1.807451e+01  6.600044928
-    ## level5-7            -9.103231680 -2.144080e+01  3.234339975
-    ## level1-7           -10.534705893 -2.187704e+01  0.807625116
-    ## time_secs           -0.005958517 -8.808055e-03 -0.003108978
-    ## stimTypeLetters      3.112804053 -5.206292e+00 11.431899790
-    ## level3-5:time_secs   0.004228751  1.251243e-04  0.008332378
-    ## level5-7:time_secs   0.002170217 -2.515301e-03  0.006855735
-    ## level1-7:time_secs   0.007147797  2.984473e-03  0.011311122
-    ## [1] "BIC-based Bayes Factor: 1462.5*"
+    ##                       Estimate Std. Error    t value
+    ## (Intercept)          51.753809   4.559135 11.3516740
+    ## level3-5             -2.172234   6.217792 -0.3493578
+    ## level5-7             -5.792626   6.198640 -0.9344996
+    ## level1-7             -5.930859   5.720186 -1.0368298
+    ## time_hours          -21.471686   5.154725 -4.1654377
+    ## stimTypeLetters       3.188210   4.219698  0.7555540
+    ## level3-5:time_hours  15.575226   7.419979  2.0990931
+    ## level5-7:time_hours   8.004157   8.479781  0.9439107
+    ## level1-7:time_hours  26.098925   7.564887  3.4500088
+    ##                                     2.5 %     97.5 %
+    ## (Intercept)          51.753809  42.818070  60.689549
+    ## level3-5             -2.172234 -14.358883  10.014415
+    ## level5-7             -5.792626 -17.941736   6.356484
+    ## level1-7             -5.930859 -17.142218   5.280499
+    ## time_hours          -21.471686 -31.574761 -11.368611
+    ## stimTypeLetters       3.188210  -5.082246  11.458665
+    ## level3-5:time_hours  15.575226   1.032335  30.118117
+    ## level5-7:time_hours   8.004157  -8.615909  24.624223
+    ## level1-7:time_hours  26.098925  11.272020  40.925831
+    ## [1] "BIC-based Bayes Factor: 1062.6*"
 
 Only easy-letters
 
 ``` r
-LRT(subset(D, (level == '1-3' & stimType=='Letters')), 
-    pggInvest ~ time_secs + (1|id),
-    pggInvest ~         1 + (1|id))
+LRT(filter(D, (level == '1-3' & stimType=='Letters')), 
+    pggInvest ~ time_hours + (span|id),
+    pggInvest ~         1 + (span|id))
 ```
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.00449861
+    ## (tol = 0.002, component 1)
 
     ## Data: D
     ## Models:
-    ## fit.null: pggInvest ~ 1 + (1 | id)
-    ## fit.full: pggInvest ~ time_secs + (1 | id)
+    ## fit.null: pggInvest ~ 1 + (span | id)
+    ## fit.full: pggInvest ~ time_hours + (span | id)
     ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)    
-    ## fit.null  3 13791 13807 -6892.4    13785                             
-    ## fit.full  4 13762 13783 -6876.7    13754 31.325      1  2.182e-08 ***
+    ## fit.null  5 13793 13819 -6891.3    13783                             
+    ## fit.full  6 13763 13795 -6875.6    13751 31.429      1  2.069e-08 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ##                Estimate  Std. Error   t value
-    ## (Intercept) 53.48901338 5.404064227  9.897923
-    ## time_secs   -0.01091131 0.001939171 -5.626790
-    ##                               2.5 %       97.5 %
-    ## (Intercept) 53.48901338 42.89724212 64.080784635
-    ## time_secs   -0.01091131 -0.01471201 -0.007110603
-    ## [1] "BIC-based Bayes Factor: 165052.8"
+    ##              Estimate Std. Error   t value
+    ## (Intercept)  48.06531   5.281566  9.100579
+    ## time_hours  -39.25452   6.964596 -5.636296
+    ##                           2.5 %    97.5 %
+    ## (Intercept)  48.06531  37.71363  58.41698
+    ## time_hours  -39.25452 -52.90488 -25.60417
+    ## [1] "BIC-based Bayes Factor: 173858.2"
+
+# Supplementary stuff
+
+See the notebook for the dots task for more supplementary analyses.

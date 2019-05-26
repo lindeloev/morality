@@ -1,4 +1,4 @@
-# Data and analysis for the paper "Morality in the Time of Cognitive Famine
+# Data and analysis for the paper "Morality in the Time of Cognitive Famine"
 ... by Panos Mitkidis, Jonas Kristoffer Lindeløv, and others.
 
 The folder `experiment` contains the files used to run the experiment using PsychoPy 1.83.00. This should run well on newer PsychoPy2 versions, but could fail on PsychoPy3.

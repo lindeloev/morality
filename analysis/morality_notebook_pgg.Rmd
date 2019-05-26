@@ -16,7 +16,7 @@ output:
 -->
 
 # About
-This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 1 and 2** using the Public Goods Game to study prosociality.
+This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 1** using the Public Goods Game to study cooperation and Operation Span task to load working memory.
 
 
 # Setting up
@@ -30,8 +30,8 @@ source('misc/functions utility.R')
 source('misc/functions inference.R')  # Contains LRT and LRT_binom
 ```
 
-You could redo the preprocessing of the original data if you wanted to. It saves the data.frames which are loaded in the sections below.
-```{r, eval=FALSE}
+You could redo the preprocessing of the original data if you wanted to. It saves the .Rda files which are loaded in the sections below.
+```{r, eval=FALSE, warning=FALSE, message=FALSE}
 source('preprocess PGG.R')
 ```
 
@@ -40,19 +40,23 @@ source('preprocess PGG.R')
 ... and remove two subjects who did not follow instructions (noted by the research assistant)
 ```{r load data}
 # Load the data.frame (not in csv because the matrix columns would be lost)
-D_pgg = readRDS('data/pgg.Rda')
-D_pgg = subset(D_pgg, condition=='experiment')  # Remove practice, etc.
-D_pgg = select(D_pgg, -encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't be using them
-D_pgg = droplevels(D_pgg)
-D = D_pgg  # For convenience
+D = readRDS('data/pgg.Rda') %>%
+  filter(condition == 'experiment') %>%  # Remove practice, etc.
+  select(-encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't be using them
 ```
 
 # Descriptives
+For manuscript:
 ```{r exp12 descriptives}
 D_id = D[!duplicated(D$id), ]
 
 # Per-group descriptives for paper
-D_id %>%
+D %>%
+  # One row per participant
+  group_by(id) %>%
+  slice(1) %>%
+  
+  # Per-experiment group
   group_by(exp) %>%
   summarise(
     n=n(),
@@ -61,9 +65,16 @@ D_id %>%
   ) #%>%
   # kable() %>% 
   # kable_styling(bootstrap_options = "striped", full_width = F)
+```
 
-# Supplementary table: stratified by level and stimType descriptives
-x = D_id %>%  # Per-person
+Supplementary per-group info stratified by level and stimType descriptives:
+```{r}
+x = D %>%  
+  # One row per participant
+  group_by(id) %>%
+  slice(1) %>%
+  
+  # Per stimType-level combination
   group_by(stimType, level) %>%
   summarise(
     n=n(),
@@ -83,6 +94,7 @@ bind_cols(x, y[,3:4])# %>%
   # kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
+
 # Concurrent load: Figure 2
 ```{r figure2, fig.height=5, fig.width=4}
 # Fit a simple mixed model to show the results while subtracting individual differences
@@ -91,7 +103,7 @@ fit_full = lmer(pggInvest ~ span*stimType + (1|id), D)
 # Add the fits to the data
 x = ranef(fit_full)  # random effects for each subject
 D$pggInvestOffset = mapvalues2(D$id, from=rownames(x$id), to=x$id$`(Intercept)`)  # map it unto data
-df_tmp = subset(D, span==1 & level=='1-7')
+df_tmp = filter(D, span==1 & level=='1-7')
 y_offset = mean(df_tmp$pggInvest - df_tmp$pggInvestOffset, na.rm=T)
 D$pggInvestZeroCenter = D$pggInvest - D$pggInvestOffset - y_offset
 
@@ -105,10 +117,8 @@ figure2 = ggplot(D, aes(x=span, y=pggInvestZeroCenter, color=level)) +
 
 figure2 = style_my_plot(figure2)
 
-# Save it
+# Show it and save it
 ggsave('figures/Figure 2 - PGG and CS span.png', figure2, width=6, height=6, units='cm', dpi=300, scale=1.7)
-
-# Show it 
 figure2
 ```
 
@@ -122,44 +132,73 @@ figureS2 = ggplot(D, aes(x=span, y=pggInvest, color=level)) +
   scale_x_continuous(breaks=1:7) + scale_y_continuous(breaks=seq(-100, 100, 2))
 
 figureS2 = style_my_plot(figureS2)
-figureS2
 
+# Show it and save it
 ggsave('figures/Figure S2 - PGG and CS span.png', figureS2, width=9, height=6, units='cm', dpi=300, scale=1.7)
+figureS2
 ```
+
 
 
 
 # Concurrent load: inference
-Main test:
-```{r pgg load}
+Main test. Output of `LRT` consists of:
+
+1. LRT test to obtain p-value
+2. Parameters from `lmer` of the full model
+3. Bootstrapped parameter estimates and intervals
+4. BIC-based Bayes Factor based on the BIC values from (1)
+
+```{r pgg load, message=FALSE, warning=FALSE}
 LRT(D, 
     pggInvest ~ span + stimType + time_hours + (span|id), 
     pggInvest ~    1 + stimType + time_hours + (span|id))
-
-# Bayesian version (takes a looooooong time to run!)
-# Needs well-considered priors
-# library(brms)
-# full = brm(pggInvest ~ span + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
-# null = brm(pggInvest ~ 1 + (1 + span|id) + (1|stimType), D, chains=5, cores=5, iter=650, warmup=150)
-# bayes_factor(full, null)
 ```
 
-Effect of CS stimulus type:
+I would looove to go proper Bayesian, but it is too slow:
+```{r}
+# # Bayesian version (takes a looooooong time to run!)
+# # Needs well-considered priors
+# library(brms)
+# full = brm(pggInvest ~ span + stimType + time_hours + (span|id), D, chains=1, cores=1, iter=650, warmup=150, save_all_pars=TRUE)
+# null = brm(pggInvest ~    1 + stimType + time_hours + (span|id), D, chains=1, cores=1, iter=650, warmup=150, save_all_pars=TRUE)
+# bayes_factor(full, null)
+# loo(full, null)
+
+
+# # Disregard the many responses at 0 and 100 as being from a different process
+# D$pggInvest_scaled = D$pggInvest / 100  # Scale down to [0, 1]; effectively making this equivalent to a stretched beta
+# 
+# Q = bf(
+#   pggInvest_scaled ~ span + (1|id),
+#   phi ~ span,
+#   zoi ~ span,
+#   coi ~ span,
+#   family = zero_one_inflated_beta()
+# )
+# 
+# Q_fit = brm(Q, D)
+```
+
+
+Effect of CS stimulus type - does it change (interact with) the slope?
 ```{r}
 LRT(D, 
     pggInvest ~ span * stimType + time_hours + (span|id), 
     pggInvest ~ span + stimType + time_hours + (span|id))
 ```
 
-Effect of difficulty level:
+Effect of difficulty level - does it change (interact with) the slope?
 ```{r}
 LRT(D, 
-    pggInvest ~ span * level + (1+span|id),
-    pggInvest ~ span + level + (1+span|id))
+    pggInvest ~ span * level + stimType + time_hours + (span|id),
+    pggInvest ~ span + level + stimType + time_hours + (span|id))
 ```
 
 
-# Depletion: Figure 3
+
+
+# Figure 3: Effect of time
 ```{r figure3}
 # Get subject random effects. Intercept t=0, but keep level-specific offsets
 fit = lmer(pggInvest ~ time_secs + level + stimType + (1|id), D)
@@ -175,38 +214,42 @@ figure3 = ggplot(D, aes(x=time_secs/60, y=pggInvest - pggInvestOffset, color=lev
   facet_grid(stimType~level) + 
   
   # Styling
-  labs(title='Depletion and cooperation', y='Public Goods Game Investment', x='Minutes elapsed') + 
-  scale_x_continuous(breaks=seq(0, 20, 5)) + coord_cartesian(xlim=c(0, 20), ylim=c(35, 60)) + scale_y_continuous(breaks=seq(-100, 100, 5))
+  labs(title='Load over time and cooperation', y='Public Goods Game Investment', x='Minutes elapsed') + 
+  scale_x_continuous(breaks=seq(-10, 30, 5)) + coord_cartesian(xlim=c(0, 17), ylim=c(35, 60)) + scale_y_continuous(breaks=seq(-100, 100, 5))
 
 figure3 = style_my_plot(figure3)
 figure3
 
-ggsave('figures/Figure 3 - PGG and CS depletion.png', figure3, width=8, height=3.8, units='cm', dpi=300, scale=2)
+ggsave('figures/Figure 3 - PGG and CS over time.png', figure3, width=8, height=4.5, units='cm', dpi=300, scale=2.5)
 ```
 
 
 # Depletion on PGG investment: Inference
-Main analysis. Notice that span is not nested in the random effect for `id` because it may be confounded by the between-subject variable `level`.
-```{r pgg objective depletion}
-LRT(D, pggInvest ~ level * time_secs + stimType + (1|id),
-       pggInvest ~ level + time_secs + stimType + (1|id))
+Main analysis:
+
+```{r}
+LRT(D, pggInvest ~ level * time_hours + stimType + (span|id),
+       pggInvest ~ level + time_hours + stimType + (span|id))
 ```
+
 Without easy-letters:
 ```{r}
-LRT(subset(D, !(level == '1-3' & stimType=='Letters')), 
-    pggInvest ~ level * time_secs + stimType + (1|id),
-    pggInvest ~ level + time_secs + stimType + (1|id))
-
+LRT(filter(D, !(level == '1-3' & stimType=='Letters')), 
+    pggInvest ~ level * time_hours + stimType + (span|id),
+    pggInvest ~ level + time_hours + stimType + (span|id))
 ```
+
 
 
 Only easy-letters
 ```{r}
-LRT(subset(D, (level == '1-3' & stimType=='Letters')), 
-    pggInvest ~ time_secs + (1|id),
-    pggInvest ~         1 + (1|id))
+LRT(filter(D, (level == '1-3' & stimType=='Letters')), 
+    pggInvest ~ time_hours + (span|id),
+    pggInvest ~         1 + (span|id))
 ```
 
 
 # Supplementary stuff
 See the notebook for the dots task for more supplementary analyses.
+
+

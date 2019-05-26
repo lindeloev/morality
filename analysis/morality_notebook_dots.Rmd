@@ -10,7 +10,7 @@ output:
 
 
 # About
-This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 3 and 4** using the Dots Task to study cheating. 
+This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 2** using the Dots Task to study dishonesty (cheating) 
 
 
 
@@ -26,13 +26,13 @@ source('misc/functions utility.R')
 source('misc/functions inference.R')  # Contains LRT and LRT_binom
 ```
 
-You could redo the preprocessing of the original data if you wanted to. It saves the data.frames which are loaded in the sections below.
-```{r, eval=FALSE}
+You could redo the preprocessing of the original data if you wanted to. It saves the data.frame in an .Rda file which is loaded in the sections below.
+```{r preprocess dots, eval=FALSE, warning=FALSE, message=FALSE}
 source('preprocess dots.R')
 ```
 
 
-```{r}
+```{r load dots}
 D_dots = readRDS('data/dots.Rda')
 D_dots = droplevels(subset(D_dots, condition == 'experiment'))  # Not practice, etc
 D_dots = select(D_dots, -encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't
@@ -42,6 +42,7 @@ D = D_dots  # For convenience
 
 
 # Descriptives
+For manuscript:
 ```{r dots descriptives}
 # Just one row per subject to do descriptives on them
 D_id = D[!duplicated(D$id), ]
@@ -54,9 +55,10 @@ D_id %>%
             males = sprintf('%i (%.1f %%)', sum(gender=='male'), 100*sum(gender=='male')/n())) #%>%
   #kable() %>% 
   #kable_styling(bootstrap_options = "striped", full_width = F)
+```
 
-
-# Supplementary table: stratified by level and stimType descriptives
+All groups stratified by level and stimType for supplementary:
+```{r}
 x = D_id %>%  # Per-person
   group_by(stimType, level) %>%
   summarise(n=n(),
@@ -75,6 +77,8 @@ bind_cols(x, y[,3:4]) #%>%
 
 
 
+
+
 # WM Load and dots: Figure 4 and supplementary
 ```{r figure4, cache=TRUE}
 # Span and correctness
@@ -83,11 +87,15 @@ D$levelGroup = factor(D$levelGroup, levels=c('span 1-7', 'span 1-3, 3-5, 5-7'))
 D$incentiveLevel = with(D, interaction(dotsIncentive, level))
 
 # The figure
-# Note that binom.summary is one I made to do binomial CIs.
-figure4 = ggplot(D, aes(x=span, y=dotsCorrect, color=dotsIncentive, group=incentiveLevel)) + 
+# Note that binom.summary is hand-made (in utilities) to do binomial CIs.
+figure4 = ggplot(D, aes(x=span, y=dotsCorrect, color=dotsIncentive, group=incentiveLevel)) +
   stat_summary(fun.data=binom.summary, size=0.3, position=position_dodge(0.5)) + 
   stat_summary(fun.y=mean, geom='line', position=position_dodge(0.5)) +
-  #binomial_smooth(size=0.5) +
+  
+  # Alternative way of showing the trends. 
+  # Closer to the inference model but further from the data.
+  #binomial_smooth() + 
+  #stat_summary(fun.y = mean, geom='point') + 
   
   # Styling
   geom_hline(aes(yintercept=0.5), color='red', lty=2) +
@@ -111,7 +119,7 @@ figure4
 
 
 Supplementary figure - adds `dotsN` and `stimType` to the faceting:
-```{r}
+```{r figure4 supplementary}
 figure4S = ggplot(D, aes(x=span, y=dotsCorrect, color=dotsIncentive)) + 
   stat_summary(fun.data=binom.summary, size=0.3, position=position_dodge(0.5)) + 
   stat_summary(fun.y=mean, geom='line', position=position_dodge(0.5)) +
@@ -137,27 +145,27 @@ figure4S
 
 
 # WM load and dots: inferential stuff
-There is a tradeoff to be made in the models below between having a full random structure and making the models identifiable. I have tried keeping the model fairly maximal but varified that simpler models yield the same qualitative conclusions. One simplification is not to include a random effect for (id|level) and (id|stimType) since the random effect for id does most of the job of between-group differences. So the random structure reflects within-subject structures below.
+*Note on identifiability:* There is a tradeoff to be made in the models below between having a full random structure and making the models identifiable. I have tried keeping the model fairly maximal and verified that simpler models yield the same qualitative conclusions as the unidentifiable complex ones. One simplification is to remove `span` from some of the models (including doing `(1|id)` instead of `(span|id)`) because, as it turns out, `span` does not make a difference for the chance of getting a correct `dotsCorrect`
 
-
-Do subjects cheat? dotsIncentive makes this a difference-question between cheating and accuracy
+Do subjects cheat? dotsIncentive makes this a difference-question between cheating and accuracy incentives (testing `dotsIncentive`).
 
 Notice that the reference level becomes quite a specific combination of the fixed effects, but we are only interested in the effects, not the intercept, so that's OK.
+
 ```{r binom incentive, warning=FALSE, cache=TRUE}
 LRT_binom(D,
-          dotsCorrect ~ dotsIncentive + dotsReceiver + stimType + dotsN + time_hours + (span|id),
-          dotsCorrect ~                 dotsReceiver + stimType + dotsN + time_hours + (span|id))
+          dotsCorrect ~ dotsIncentive + dotsReceiver + stimType + dotsN + time_hours + (1|id),
+          dotsCorrect ~                 dotsReceiver + stimType + dotsN + time_hours + (1|id))
 ```
 
-Is cheating (the accuracy-cheating difference) modulated by receiver?
+Is cheating (the accuracy-cheating difference) modulated by receiver? i.e., do participants cheat equally for personal gain and for the gain of another?
 ```{r binom incentive-receiver, warning=FALSE, cache=TRUE}
 LRT_binom(D,
-          dotsCorrect ~ dotsIncentive * dotsReceiver + dotsN + time_hours + (span|id),
-          dotsCorrect ~ dotsIncentive + dotsReceiver + dotsN + time_hours + (span|id))
+          dotsCorrect ~ dotsIncentive * dotsReceiver + dotsN + time_hours + (1|id),
+          dotsCorrect ~ dotsIncentive + dotsReceiver + dotsN + time_hours + (1|id))
 ```
 
 
-Is cheating (the accuracy-cheating difference) modulated by CS span?
+Is cheating (the accuracy-cheating difference) modulated by CS span? I.e., do participants cheat equally across WM loads?
 ```{r binom incentive-span, warning=FALSE, cache=TRUE}
 LRT_binom(subset(D, dotsReceiver == 'Self'),
           dotsCorrect ~ dotsIncentive*span + dotsN + time_hours + (1|id),
@@ -165,7 +173,6 @@ LRT_binom(subset(D, dotsReceiver == 'Self'),
 LRT_binom(subset(D, dotsReceiver == 'Other'),
           dotsCorrect ~ dotsIncentive*span + dotsN + time_hours + (1|id),
           dotsCorrect ~ dotsIncentive+span + dotsN + time_hours + (1|id))
-
 ```
 
 
@@ -183,13 +190,12 @@ Is this relationship different for different stimulus types?
 LRT_binom(D,
           dotsCorrect ~ dotsIncentive*span*stimType + dotsN + (1|id),
           dotsCorrect ~ dotsIncentive*span*stimType + dotsN + (1|id) - dotsIncentive:span:stimType)
-
 ```
 
 
 
-# Prepare for depletion analyses
-Before we dive into time-effects, we'll make a data.frame called `D_time` which excludes subjects who completed before the time window of interest for depletion - and optionally those who were very slow. For the latter, you could think that they were relaxed (not depleted) OR slowed by depletion itself, so we think that it is ambiguous.
+# Prepare for analyses of time-load
+Before we dive into time-effects, we'll make a data.frame called `D_time` which excludes subjects who completed before the time window of interest - and optionally those who were very slow. For the latter, you could think that they were relaxed (not depleted) OR slowed by depletion itself, so we think that it is ambiguous.
 
 ```{r dots depletion prep}
 time_frame_lower = 45 * 60  # Which time frame to analyze. Try setting to 60 minutes.
@@ -216,9 +222,9 @@ D_time = subset(D_time, !is.na(D_time$utc_start))
 
 
 
-# Depletion and dots: figure 5 and supplementary
+# Time-effects on dots: figure 5 and supplementary
 For main text:
-```{r figure5, cache=TRUE, fig.height=8, fig.width=5}
+```{r figure5, cache=TRUE, fig.height=8, fig.width=5, warning=FALSE, message=FALSE}
 figure5 = ggplot(D_time, aes(x=time_secs/60, y=dotsCorrect, color=dotsIncentive, shape=dotsIncentive)) + 
   stat_summary_bin(fun.y=mean, geom='point', binwidth=4, size=1.5) + 
   binomial_smooth(size=0.5) +
@@ -235,14 +241,14 @@ figure5 = ggplot(D_time, aes(x=time_secs/60, y=dotsCorrect, color=dotsIncentive,
   scale_x_continuous(breaks=seq(0, 100, 10)) + 
   scale_y_continuous(breaks=seq(0,1,0.1), labels=paste(seq(0, 1, 0.1)*100, '%', sep='')) +
   
-  labs(title='Depletion and cheating', y='Correctness', x='Minutes elapsed')
+  labs(title='Load over time and cheating', y='Correctness', x='Minutes elapsed')
 
 # Style it a bit more
 figure5 = style_my_plot(figure5) + 
   scale_colour_manual(values=c('black', '#777777'))
 
 # Save it and show it here
-ggsave('figures/Figure 5 - Dots and depletion.png', figure5, width=5, height=7.5, units='cm', dpi=300, scale=2.5)
+ggsave('figures/Figure 5 - Dots and load over time.png', figure5, width=5, height=7.5, units='cm', dpi=300, scale=2.5)
 figure5
 ```
 
@@ -266,66 +272,72 @@ figureS5 = ggplot(D, aes(x=time_secs/60, y=dotsCorrect, color=dotsIncentive)) +
   scale_x_continuous(breaks=seq(0, 100, 15)) + 
   scale_y_continuous(breaks=seq(0,1,0.1), labels=paste(seq(0, 1, 0.1)*100, '%', sep='')) + 
   
-  labs(title='Depletion and cheating', y='Correctness', x='Minutes elapsed')
+  labs(title='Load over time and cheating', y='Correctness', x='Minutes elapsed')
 
 figureS5 = style_my_plot(figureS5) + 
   scale_colour_manual(values=c('black', '#777777'))
-ggsave('figures/Figure S5 - Dots and depletion.png', figureS5, width=9, height=4, units='cm', dpi=300, scale=2)
+ggsave('figures/Figure S5 - Dots and load over time.png', figureS5, width=9, height=4, units='cm', dpi=300, scale=2)
 
 figureS5
 ```
 
 
 
-# Depletion analysis
+# Effects of time (depletion, learning, etc.)
 `dotsIncentive` marks the difference between accuracy and cheat-inventive trials; i.e. the magnitude of cheating. time_hours is the time passed since first trial, scaled to facilitate identifiability in the model. The random effects structure captures some known design features on which shrinkage would be nice.
 * `dotsN` is fixed because we do not consider them to be drawn randomly from a larger possible number of dots and therefore do not want shrinkage of extreme N.
 * `stimType` is random because we think there could be many different kinds of stimuli which would show the same pattern.
-* slopes are random for each subject. We think that there should be shrinkage to an overall time-trend.
+* slopes of `time_hours` are random for each subject and there is no slope on `span` (makes the model unidentifiable). We think that there should be shrinkage to an overall time-trend.
 * There is also a random offset for each subject; reflecting good/bad days, I guess.
+
 
 Is there a time-effect of the cheat-incentive overall?
 ```{r binom time-incentive, warning=FALSE, cache=TRUE}
 LRT_binom(D_time,
-          dotsCorrect ~ time_hours*dotsIncentive + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~ time_hours+dotsIncentive + dotsN + dotsReceiver + (span|id))
+          dotsCorrect ~ time_hours*dotsIncentive + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~ time_hours+dotsIncentive + dotsN + dotsReceiver + (time_hours|id))
 ```
 
 
-Is there a cognitive depletion on the ability to do the task?
-```{r binom time-incentive specific, warning=FALSE, cache=TRUE}
+
+Is there a time-effect on the ability to do the task (depletion or learning)?
+```{r binom time-incentive accuracy, warning=FALSE, cache=TRUE}
 LRT_binom(subset(D_time, dotsIncentive == 'accuracy'),
-          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~          1 + dotsN + dotsReceiver + (span|id))
+          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~          1 + dotsN + dotsReceiver + (time_hours|id))
+```
 
+Is there a time-effect on the "ability to cheat", i.e., does cheating increase over time?
+```{r binom time-incentive cheat, warning=FALSE, cache=TRUE}
 LRT_binom(subset(D_time, dotsIncentive == 'cheat'),
-          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~          1 + dotsN + dotsReceiver + (span|id))
+          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~          1 + dotsN + dotsReceiver + (time_hours|id))
 ```
 
 
-Do the different difficulty levels cause different depletion?
+
+Do the different difficulty levels cause different time-effects?
 ```{r binom time-incentive-level, warning=FALSE, cache=TRUE}
 D_time$level_numeric = as.numeric(D_time$level)  # Numeric to make it ordered according to the hypothesis
 LRT_binom(subset(D_time, level_numeric != 4),  # Leave out the mixed group (1-7)
-          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (span|id) - time_hours:dotsIncentive:level_numeric)
+          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (time_hours|id) - time_hours:dotsIncentive:level_numeric)
 ```
 
 
 Does perceived depletion alter the observed slope change?
 ```{r binom time-incentive-subjective, warning=FALSE, cache=TRUE}
 LRT_binom(subset(D_time, !is.na(subjectiveDepletion)),
-          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (span|id) - time_hours:dotsIncentive:subjectiveDepletion)
+          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (time_hours|id) - time_hours:dotsIncentive:subjectiveDepletion)
 ```
 
 
 Is the time-trend on cheating different for self- and other-receivers?
 ```{r binom time-incentive-receiver, warning=FALSE, cache=TRUE}
 LRT_binom(D_time,
-          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (span|id),
-          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (span|id) - time_hours:dotsIncentive:dotsReceiver)
+          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (time_hours|id),
+          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (time_hours|id) - time_hours:dotsIncentive:dotsReceiver)
 ```
 
 
@@ -361,8 +373,8 @@ D_all$task = ifelse(D_all$exp %in% c(1,2), 'PGG', 'Dots')
 
 
 Now, for the actual analysis:
-```{r}
-fit = lmer(dotsRT ~ level + stimType + (1|id), subset(D, exp==4))
+```{r suppl_plotboth}
+fit = lmer(dotsRT ~ level + stimType + (1|id), subset(D_all, exp==4))
 
 #D.plot = subset(D_all, 
 ggplot(subset(D_all, equationRT < 10), aes(x=factor(round(equationCorrectness*100)), y=equationRT)) + 
@@ -380,6 +392,44 @@ ggplot(subset(D_all, equationRT < 10), aes(x=factor(round(equationCorrectness*10
 
 ```
 
+If one wants to look at performance anyway (equations and recall), we can do that. First plot it:
+```{r}
+# Recall
+tradeoff_recall = ggplot(D_pgg, aes(x=recallProportion, y=pggInvest)) + 
+  #geom_density2d() +
+  geom_jitter(width=0.05, height=0, alpha=0.05) + 
+  geom_smooth(color='red', method=lm) +
+  facet_wrap(~span, ncol=3) + 
+  labs(title='Recall and PGG investment')
+
+# Equations
+tradeoff_equation = ggplot(D_pgg, aes(x=equationCorrectness, y=pggInvest)) + 
+  #geom_density2d() +
+  geom_jitter(width=0.1, height=0, alpha=0.1) + 
+  geom_smooth(color='red', method=lm) +
+  facet_wrap(~span, ncol=3) + 
+  labs(title='Arithmetic and PGG investment')
+
+# All together now
+library(patchwork)
+tradeoff_recall + tradeoff_equation
+```
+
+Then inferentially:
+```{r suppl_pgg}
+LRT(D_pgg,
+    pggInvest ~ recallProportion  + equationCorrectness + stimType + time_hours + (span|id),
+    pggInvest ~                                         + stimType + time_hours + (span|id))
+```
+
+
+... and for the dots task:
+```{r suppl_dots}
+LRT_binom(D_dots,
+    dotsCorrect ~ recallProportion + equationCorrectness + dotsIncentive + dotsN + stimType + (time_hours|id),
+    dotsCorrect ~                                      1 + dotsIncentive + dotsN + stimType + (time_hours|id))
+```
+
 
 
 ## Percieved load (questionnaire data)
@@ -389,7 +439,7 @@ First, we turn to Experiment 2 and the Public Goods Game. The estimated differen
 
 Again we see very small correspondences when considering the range-6 scale, but a large degree of the probability density is towards positive values.
 
-```{r supplementary questionnaire level, cache=T, message=F, warning=F}
+```{r supplementary questionnaire level, cache=TRUE, message=F, warning=F}
 perceived_load_cols = c('qStress', 'qDifficulty', 'qFrustration', 'qEffort', 'qSatisfied')
 
 # Summarise per subject
@@ -419,7 +469,7 @@ plot(result_level_dots, pars='^b_')
 
 ... and now for degree of cheating:
 
-```{r supplementary questionnaire invest, cache=T, message=F, warning=F}
+```{r supplementary questionnaire invest, cache=TRUE, message=F, warning=F}
 # Plot it
 ggplot(D_id_dots, aes(x=dotsCorrect, y=perceived_load)) + 
   geom_point() +

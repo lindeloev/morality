@@ -3,25 +3,33 @@ Morality in the time of cognitive famine - Dots task
 Jonas Kristoffer Lindeløv
 December, 2018
 
--   [About](#about)
--   [Setting up](#setting-up)
--   [Descriptives](#descriptives)
--   [WM Load and dots: Figure 4 and supplementary](#wm-load-and-dots-figure-4-and-supplementary)
--   [WM load and dots: inferential stuff](#wm-load-and-dots-inferential-stuff)
--   [Prepare for depletion analyses](#prepare-for-depletion-analyses)
--   [Depletion and dots: figure 5 and supplementary](#depletion-and-dots-figure-5-and-supplementary)
--   [Depletion analysis](#depletion-analysis)
--   [Supplementary stuff](#supplementary-stuff)
-    -   [A validity check: Equation correctness and reaction time](#a-validity-check-equation-correctness-and-reaction-time)
-    -   [Percieved load (questionnaire data)](#percieved-load-questionnaire-data)
+  - [About](#about)
+  - [Setting up](#setting-up)
+  - [Descriptives](#descriptives)
+  - [WM Load and dots: Figure 4 and
+    supplementary](#wm-load-and-dots-figure-4-and-supplementary)
+  - [WM load and dots: inferential
+    stuff](#wm-load-and-dots-inferential-stuff)
+  - [Prepare for analyses of
+    time-load](#prepare-for-analyses-of-time-load)
+  - [Time-effects on dots: figure 5 and
+    supplementary](#time-effects-on-dots-figure-5-and-supplementary)
+  - [Effects of time (depletion, learning,
+    etc.)](#effects-of-time-depletion-learning-etc.)
+  - [Supplementary stuff](#supplementary-stuff)
+      - [A validity check: Equation correctness and reaction
+        time](#a-validity-check-equation-correctness-and-reaction-time)
+      - [Percieved load (questionnaire
+        data)](#percieved-load-questionnaire-data)
 
-About
-=====
+# About
 
-This is part of the analysis that accompanies the paper "Morality in the time of cognitive famine" by Panos, Jonas, Michaela, and others. You are now looking at the analysis of **experiment 3 and 4** using the Dots Task to study cheating.
+This is part of the analysis that accompanies the paper “Morality in the
+time of cognitive famine” by Panos, Jonas, Michaela, and others. You are
+now looking at the analysis of **experiment 2** using the Dots Task to
+study dishonesty (cheating)
 
-Setting up
-==========
+# Setting up
 
 Load appropriate stuff:
 
@@ -35,7 +43,9 @@ source('misc/functions utility.R')
 source('misc/functions inference.R')  # Contains LRT and LRT_binom
 ```
 
-You could redo the preprocessing of the original data if you wanted to. It saves the data.frames which are loaded in the sections below.
+You could redo the preprocessing of the original data if you wanted to.
+It saves the data.frame in an .Rda file which is loaded in the sections
+below.
 
 ``` r
 source('preprocess dots.R')
@@ -48,8 +58,9 @@ D_dots = select(D_dots, -encode, -equationCorrect, -equationScores, -equationRTs
 D = D_dots  # For convenience
 ```
 
-Descriptives
-============
+# Descriptives
+
+For manuscript:
 
 ``` r
 # Just one row per subject to do descriptives on them
@@ -72,9 +83,11 @@ D_id %>%
 ``` r
   #kable() %>% 
   #kable_styling(bootstrap_options = "striped", full_width = F)
+```
 
+All groups stratified by level and stimType for supplementary:
 
-# Supplementary table: stratified by level and stimType descriptives
+``` r
 x = D_id %>%  # Per-person
   group_by(stimType, level) %>%
   summarise(n=n(),
@@ -90,7 +103,7 @@ bind_cols(x, y[,3:4]) #%>%
 ```
 
     ## # A tibble: 8 x 7
-    ## # Groups:   stimType [?]
+    ## # Groups:   stimType [2]
     ##   stimType level     n males       age_years  arithmetic recall
     ##   <fct>    <fct> <int> <chr>       <chr>      <chr>      <chr> 
     ## 1 Faces    1-3      20 10 (50.0 %) 25.8 (4.7) 95.8%      94.8% 
@@ -107,8 +120,7 @@ bind_cols(x, y[,3:4]) #%>%
   #kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
-WM Load and dots: Figure 4 and supplementary
-============================================
+# WM Load and dots: Figure 4 and supplementary
 
 ``` r
 # Span and correctness
@@ -117,11 +129,15 @@ D$levelGroup = factor(D$levelGroup, levels=c('span 1-7', 'span 1-3, 3-5, 5-7'))
 D$incentiveLevel = with(D, interaction(dotsIncentive, level))
 
 # The figure
-# Note that binom.summary is one I made to do binomial CIs.
-figure4 = ggplot(D, aes(x=span, y=dotsCorrect, color=dotsIncentive, group=incentiveLevel)) + 
+# Note that binom.summary is hand-made (in utilities) to do binomial CIs.
+figure4 = ggplot(D, aes(x=span, y=dotsCorrect, color=dotsIncentive, group=incentiveLevel)) +
   stat_summary(fun.data=binom.summary, size=0.3, position=position_dodge(0.5)) + 
   stat_summary(fun.y=mean, geom='line', position=position_dodge(0.5)) +
-  #binomial_smooth(size=0.5) +
+  
+  # Alternative way of showing the trends. 
+  # Closer to the inference model but further from the data.
+  #binomial_smooth() + 
+  #stat_summary(fun.y = mean, geom='point') + 
   
   # Styling
   geom_hline(aes(yintercept=0.5), color='red', lty=2) +
@@ -148,7 +164,7 @@ ggsave('figures/Figure 4 - Dots and CS span.png', figure4, width=7, height=7, un
 figure4
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/figure4-1.png)
+![](morality_notebook_dots_files/figure-gfm/figure4-1.png)<!-- -->
 
 Supplementary figure - adds `dotsN` and `stimType` to the faceting:
 
@@ -180,105 +196,112 @@ ggsave('figures/Figure 4S - Dots and CS span.png', figure4S, width=9, height=9, 
 figure4S
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/unnamed-chunk-3-1.png)
+![](morality_notebook_dots_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-WM load and dots: inferential stuff
-===================================
+# WM load and dots: inferential stuff
 
-There is a tradeoff to be made in the models below between having a full random structure and making the models identifiable. I have tried keeping the model fairly maximal but varified that simpler models yield the same qualitative conclusions. One simplification is not to include a random effect for (id|level) and (id|stimType) since the random effect for id does most of the job of between-group differences. So the random structure reflects within-subject structures below.
+*Note on identifiability:* There is a tradeoff to be made in the models
+below between having a full random structure and making the models
+identifiable. I have tried keeping the model fairly maximal and verified
+that simpler models yield the same qualitative conclusions as the
+unidentifiable complex ones. One simplification is to remove `span` from
+some of the models (including doing `(1|id)` instead of `(span|id)`)
+because, as it turns out, `span` does not make a difference for the
+chance of getting a correct `dotsCorrect`
 
-Do subjects cheat? dotsIncentive makes this a difference-question between cheating and accuracy
+Do subjects cheat? dotsIncentive makes this a difference-question
+between cheating and accuracy incentives (testing `dotsIncentive`).
 
-Notice that the reference level becomes quite a specific combination of the fixed effects, but we are only interested in the effects, not the intercept, so that's OK.
+Notice that the reference level becomes quite a specific combination of
+the fixed effects, but we are only interested in the effects, not the
+intercept, so that’s OK.
 
 ``` r
 LRT_binom(D,
-          dotsCorrect ~ dotsIncentive + dotsReceiver + stimType + dotsN + time_hours + (span|id),
-          dotsCorrect ~                 dotsReceiver + stimType + dotsN + time_hours + (span|id))
+          dotsCorrect ~ dotsIncentive + dotsReceiver + stimType + dotsN + time_hours + (1|id),
+          dotsCorrect ~                 dotsReceiver + stimType + dotsN + time_hours + (1|id))
 ```
-
-    ## singular fit
 
     ## Data: D
     ## Models:
     ## fit.null: dotsCorrect ~ dotsReceiver + stimType + dotsN + time_hours + 
-    ## fit.null:     (span | id)
+    ## fit.null:     (1 | id)
     ## fit.full: dotsCorrect ~ dotsIncentive + dotsReceiver + stimType + dotsN + 
-    ## fit.full:     time_hours + (span | id)
+    ## fit.full:     time_hours + (1 | id)
     ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)    
-    ## fit.null  8 19835 19898 -9909.5    19819                             
-    ## fit.full  9 18201 18272 -9091.6    18183 1635.9      1  < 2.2e-16 ***
+    ## fit.null  6 19833 19880 -9910.3    19821                             
+    ## fit.full  7 18199 18254 -9092.4    18185 1635.9      1  < 2.2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ##                       Estimate Std. Error    z value      Pr(>|z|)
-    ## (Intercept)         7.84229773 0.19283830  40.667738  0.000000e+00
-    ## dotsIncentivecheat -1.96346365 0.05569641 -35.252966 3.090032e-272
-    ## dotsReceiverOther   0.35314031 0.03736591   9.450870  3.360263e-21
-    ## stimTypeLetters    -0.05813486 0.14375298  -0.404408  6.859127e-01
-    ## dotsN              -0.45507484 0.01215587 -37.436635 9.911225e-307
-    ## time_hours         -0.78035632 0.07031665 -11.097746  1.286481e-28
+    ##                       Estimate Std. Error     z value      Pr(>|z|)
+    ## (Intercept)         7.83931356 0.19295111  40.6284964  0.000000e+00
+    ## dotsIncentivecheat -1.96338552 0.05569392 -35.2531390 3.071276e-272
+    ## dotsReceiverOther   0.35349221 0.03736216   9.4612364  3.043231e-21
+    ## stimTypeLetters    -0.05119294 0.14406773  -0.3553394  7.223353e-01
+    ## dotsN              -0.45493752 0.01215438 -37.4299341 1.273895e-306
+    ## time_hours         -0.78136334 0.07032632 -11.1105396  1.114838e-28
     ##                                        2.5 %       97.5 %
-    ## (Intercept)        2546.0482418 1744.7064468 3715.4454616
-    ## dotsIncentivecheat    0.1403714    0.1258548    0.1565624
-    ## dotsReceiverOther     1.4235309    1.3230034    1.5316968
-    ## stimTypeLetters       0.9435227    0.7118518    1.2505905
-    ## dotsN                 0.6344005    0.6194645    0.6496966
-    ## time_hours            0.4582427    0.3992472    0.5259557
+    ## (Intercept)        2538.4617409 1739.1231572 3705.1936106
+    ## dotsIncentivecheat    0.1403823    0.1258652    0.1565739
+    ## dotsReceiverOther     1.4240319    1.3234788    1.5322246
+    ## stimTypeLetters       0.9500953    0.7163686    1.2600793
+    ## dotsN                 0.6344876    0.6195514    0.6497839
+    ## time_hours            0.4577815    0.3988378    0.5254363
     ## [1] "BIC-based Bayes Factor: Inf"
 
 Is cheating (the accuracy-cheating difference) modulated by receiver?
+i.e., do participants cheat equally for personal gain and for the gain
+of another?
 
 ``` r
 LRT_binom(D,
-          dotsCorrect ~ dotsIncentive * dotsReceiver + dotsN + time_hours + (span|id),
-          dotsCorrect ~ dotsIncentive + dotsReceiver + dotsN + time_hours + (span|id))
+          dotsCorrect ~ dotsIncentive * dotsReceiver + dotsN + time_hours + (1|id),
+          dotsCorrect ~ dotsIncentive + dotsReceiver + dotsN + time_hours + (1|id))
 ```
-
-    ## singular fit
-    ## singular fit
 
     ## Data: D
     ## Models:
     ## fit.null: dotsCorrect ~ dotsIncentive + dotsReceiver + dotsN + time_hours + 
-    ## fit.null:     (span | id)
+    ## fit.null:     (1 | id)
     ## fit.full: dotsCorrect ~ dotsIncentive * dotsReceiver + dotsN + time_hours + 
-    ## fit.full:     (span | id)
-    ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)    
-    ## fit.null  8 18199 18262 -9091.7    18183                             
-    ## fit.full  9 18130 18201 -9056.2    18112 71.036      1  < 2.2e-16 ***
+    ## fit.full:     (1 | id)
+    ##          Df   AIC   BIC  logLik deviance Chisq Chi Df Pr(>Chisq)    
+    ## fit.null  6 18197 18244 -9092.4    18185                            
+    ## fit.full  7 18128 18183 -9057.0    18114 70.91      1  < 2.2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ##                                        Estimate Std. Error    z value
-    ## (Intercept)                           8.2511521 0.19009557  43.405283
-    ## dotsIncentivecheat                   -2.4297866 0.08291542 -29.304400
-    ## dotsReceiverOther                    -0.4350180 0.10135822  -4.291886
-    ## dotsN                                -0.4576027 0.01219782 -37.515121
-    ## time_hours                           -0.7900257 0.07052736 -11.201691
-    ## dotsIncentivecheat:dotsReceiverOther  0.9155702 0.10928472   8.377842
+    ## (Intercept)                           8.2515882 0.19015577  43.393835
+    ## dotsIncentivecheat                   -2.4292772 0.08289203 -29.306524
+    ## dotsReceiverOther                    -0.4338955 0.10133196  -4.281921
+    ## dotsN                                -0.4575396 0.01219630 -37.514617
+    ## time_hours                           -0.7911983 0.07053464 -11.217159
+    ## dotsIncentivecheat:dotsReceiverOther  0.9147182 0.10925432   8.372375
     ##                                           Pr(>|z|)
     ## (Intercept)                           0.000000e+00
-    ## dotsIncentivecheat                   9.115485e-189
-    ## dotsReceiverOther                     1.771616e-05
-    ## dotsN                                5.221706e-308
-    ## time_hours                            4.000246e-29
-    ## dotsIncentivecheat:dotsReceiverOther  5.390673e-17
+    ## dotsIncentivecheat                   8.564562e-189
+    ## dotsReceiverOther                     1.852866e-05
+    ## dotsN                                5.321405e-308
+    ## time_hours                            3.358882e-29
+    ## dotsIncentivecheat:dotsReceiverOther  5.646817e-17
     ##                                                          2.5 %
-    ## (Intercept)                          3.832038e+03 2.640099e+03
-    ## dotsIncentivecheat                   8.805562e-02 7.484786e-02
-    ## dotsReceiverOther                    6.472530e-01 5.306374e-01
-    ## dotsN                                6.327989e-01 6.178498e-01
-    ## time_hours                           4.538331e-01 3.952421e-01
-    ## dotsIncentivecheat:dotsReceiverOther 2.498199e+00 2.016526e+00
+    ## (Intercept)                          3.833710e+03 2.640939e+03
+    ## dotsIncentivecheat                   8.810048e-02 7.488942e-02
+    ## dotsReceiverOther                    6.479800e-01 5.312607e-01
+    ## dotsN                                6.328388e-01 6.178906e-01
+    ## time_hours                           4.533013e-01 3.947733e-01
+    ## dotsIncentivecheat:dotsReceiverOther 2.496072e+00 2.014928e+00
     ##                                            97.5 %
-    ## (Intercept)                          5562.1087799
-    ## dotsIncentivecheat                      0.1035941
-    ## dotsReceiverOther                       0.7894968
-    ## dotsN                                   0.6481097
-    ## time_hours                              0.5211098
-    ## dotsIncentivecheat:dotsReceiverOther    3.0949270
-    ## [1] "BIC-based Bayes Factor: 19555373101438.7"
+    ## (Intercept)                          5565.1912553
+    ## dotsIncentivecheat                      0.1036421
+    ## dotsReceiverOther                       0.7903428
+    ## dotsN                                   0.6481486
+    ## time_hours                              0.5205065
+    ## dotsIncentivecheat:dotsReceiverOther    3.0921069
+    ## [1] "BIC-based Bayes Factor: 18368711097031.5"
 
 Is cheating (the accuracy-cheating difference) modulated by CS span?
+I.e., do participants cheat equally across WM loads?
 
 ``` r
 LRT_binom(subset(D, dotsReceiver == 'Self'),
@@ -342,7 +365,8 @@ LRT_binom(subset(D, dotsReceiver == 'Other'),
     ## dotsIncentivecheat:span    0.9991871    0.9250574    1.0792573
     ## [1] "BIC-based Bayes Factor: 95.2*"
 
-Does this cheating-span relationship replicate across dotsN (dots ambiguity)?
+Does this cheating-span relationship replicate across dotsN (dots
+ambiguity)?
 
 ``` r
 LRT_binom(D,
@@ -455,10 +479,13 @@ LRT_binom(D,
     ## dotsIncentivecheat:span:stimTypeLetters    0.8460948
     ## [1] "BIC-based Bayes Factor: 873.1"
 
-Prepare for depletion analyses
-==============================
+# Prepare for analyses of time-load
 
-Before we dive into time-effects, we'll make a data.frame called `D_time` which excludes subjects who completed before the time window of interest for depletion - and optionally those who were very slow. For the latter, you could think that they were relaxed (not depleted) OR slowed by depletion itself, so we think that it is ambiguous.
+Before we dive into time-effects, we’ll make a data.frame called
+`D_time` which excludes subjects who completed before the time window of
+interest - and optionally those who were very slow. For the latter, you
+could think that they were relaxed (not depleted) OR slowed by depletion
+itself, so we think that it is ambiguous.
 
 ``` r
 time_frame_lower = 45 * 60  # Which time frame to analyze. Try setting to 60 minutes.
@@ -484,15 +511,14 @@ sprintf('M=%.02f minutes (SD=%.02f). %i excluded out of %i',
 plot(sort(completion_data$time_secs)/60, ylim=c(20, 110), xlab='Participant (ordered)', ylab='Completion time (minutes)', main='Window of acceptance for completion times'); grid(); abline(h=c(time_frame_lower/60, time_frame_upper/60), col='red')
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/dots%20depletion%20prep-1.png)
+![](morality_notebook_dots_files/figure-gfm/dots%20depletion%20prep-1.png)<!-- -->
 
 ``` r
 # One subject has wrong/absent recording of trial time, so is not included
 D_time = subset(D_time, !is.na(D_time$utc_start))
 ```
 
-Depletion and dots: figure 5 and supplementary
-==============================================
+# Time-effects on dots: figure 5 and supplementary
 
 For main text:
 
@@ -513,23 +539,18 @@ figure5 = ggplot(D_time, aes(x=time_secs/60, y=dotsCorrect, color=dotsIncentive,
   scale_x_continuous(breaks=seq(0, 100, 10)) + 
   scale_y_continuous(breaks=seq(0,1,0.1), labels=paste(seq(0, 1, 0.1)*100, '%', sep='')) +
   
-  labs(title='Depletion and cheating', y='Correctness', x='Minutes elapsed')
+  labs(title='Load over time and cheating', y='Correctness', x='Minutes elapsed')
 
 # Style it a bit more
 figure5 = style_my_plot(figure5) + 
   scale_colour_manual(values=c('black', '#777777'))
-```
 
-    ## Scale for 'colour' is already present. Adding another scale for
-    ## 'colour', which will replace the existing scale.
-
-``` r
 # Save it and show it here
-ggsave('figures/Figure 5 - Dots and depletion.png', figure5, width=5, height=7.5, units='cm', dpi=300, scale=2.5)
+ggsave('figures/Figure 5 - Dots and load over time.png', figure5, width=5, height=7.5, units='cm', dpi=300, scale=2.5)
 figure5
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/figure5-1.png)
+![](morality_notebook_dots_files/figure-gfm/figure5-1.png)<!-- -->
 
 For the supplementary materials:
 
@@ -551,7 +572,7 @@ figureS5 = ggplot(D, aes(x=time_secs/60, y=dotsCorrect, color=dotsIncentive)) +
   scale_x_continuous(breaks=seq(0, 100, 15)) + 
   scale_y_continuous(breaks=seq(0,1,0.1), labels=paste(seq(0, 1, 0.1)*100, '%', sep='')) + 
   
-  labs(title='Depletion and cheating', y='Correctness', x='Minutes elapsed')
+  labs(title='Load over time and cheating', y='Correctness', x='Minutes elapsed')
 
 figureS5 = style_my_plot(figureS5) + 
   scale_colour_manual(values=c('black', '#777777'))
@@ -561,7 +582,7 @@ figureS5 = style_my_plot(figureS5) +
     ## 'colour', which will replace the existing scale.
 
 ``` r
-ggsave('figures/Figure S5 - Dots and depletion.png', figureS5, width=9, height=4, units='cm', dpi=300, scale=2)
+ggsave('figures/Figure S5 - Dots and load over time.png', figureS5, width=9, height=4, units='cm', dpi=300, scale=2)
 ```
 
     ## Warning: Removed 84 rows containing non-finite values (stat_summary_bin).
@@ -573,354 +594,376 @@ figureS5
 ```
 
     ## Warning: Removed 84 rows containing non-finite values (stat_summary_bin).
-
+    
     ## Warning: Removed 84 rows containing non-finite values (stat_smooth).
 
-![](morality_notebook_dots_files/figure-markdown_github/figure5S-1.png)
+![](morality_notebook_dots_files/figure-gfm/figure5S-1.png)<!-- -->
 
-Depletion analysis
-==================
+# Effects of time (depletion, learning, etc.)
 
-`dotsIncentive` marks the difference between accuracy and cheat-inventive trials; i.e. the magnitude of cheating. time\_hours is the time passed since first trial, scaled to facilitate identifiability in the model. The random effects structure captures some known design features on which shrinkage would be nice. \* `dotsN` is fixed because we do not consider them to be drawn randomly from a larger possible number of dots and therefore do not want shrinkage of extreme N. \* `stimType` is random because we think there could be many different kinds of stimuli which would show the same pattern. \* slopes are random for each subject. We think that there should be shrinkage to an overall time-trend. \* There is also a random offset for each subject; reflecting good/bad days, I guess.
+`dotsIncentive` marks the difference between accuracy and
+cheat-inventive trials; i.e. the magnitude of cheating. time\_hours is
+the time passed since first trial, scaled to facilitate identifiability
+in the model. The random effects structure captures some known design
+features on which shrinkage would be nice. \* `dotsN` is fixed because
+we do not consider them to be drawn randomly from a larger possible
+number of dots and therefore do not want shrinkage of extreme N. \*
+`stimType` is random because we think there could be many different
+kinds of stimuli which would show the same pattern. \* slopes of
+`time_hours` are random for each subject and there is no slope on `span`
+(makes the model unidentifiable). We think that there should be
+shrinkage to an overall time-trend. \* There is also a random offset for
+each subject; reflecting good/bad days, I guess.
 
 Is there a time-effect of the cheat-incentive overall?
 
 ``` r
 LRT_binom(D_time,
-          dotsCorrect ~ time_hours*dotsIncentive + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~ time_hours+dotsIncentive + dotsN + dotsReceiver + (span|id))
+          dotsCorrect ~ time_hours*dotsIncentive + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~ time_hours+dotsIncentive + dotsN + dotsReceiver + (time_hours|id))
 ```
-
-    ## singular fit
-    ## singular fit
 
     ## Data: D
     ## Models:
     ## fit.null: dotsCorrect ~ time_hours + dotsIncentive + dotsN + dotsReceiver + 
-    ## fit.null:     (span | id)
+    ## fit.null:     (time_hours | id)
     ## fit.full: dotsCorrect ~ time_hours * dotsIncentive + dotsN + dotsReceiver + 
-    ## fit.full:     (span | id)
+    ## fit.full:     (time_hours | id)
     ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)    
-    ## fit.null  8 16746 16808 -8365.0    16730                             
-    ## fit.full  9 16702 16772 -8342.1    16684 45.791      1  1.315e-11 ***
+    ## fit.null  8 16509 16571 -8246.5    16493                             
+    ## fit.full  9 16434 16503 -8207.9    16416 77.283      1  < 2.2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ##                                 Estimate Std. Error    z value
-    ## (Intercept)                    7.8478926 0.18732282  41.895017
-    ## time_hours                     0.4002137 0.18817481   2.126818
-    ## dotsIncentivecheat            -1.9222289 0.05783608 -33.235810
-    ## dotsN                         -0.4599098 0.01270198 -36.207735
-    ## dotsReceiverOther              0.3654218 0.03900778   9.367921
-    ## time_hours:dotsIncentivecheat -1.3715395 0.20294512  -6.758179
+    ## (Intercept)                    8.0649708 0.19216424  41.969155
+    ## time_hours                     0.8874062 0.22861158   3.881720
+    ## dotsIncentivecheat            -2.0030858 0.05941107 -33.715699
+    ## dotsN                         -0.4730468 0.01300433 -36.376109
+    ## dotsReceiverOther              0.3797827 0.03968353   9.570284
+    ## time_hours:dotsIncentivecheat -1.8553378 0.21114805  -8.786905
     ##                                    Pr(>|z|)
     ## (Intercept)                    0.000000e+00
-    ## time_hours                     3.343517e-02
-    ## dotsIncentivecheat            3.273128e-242
-    ## dotsN                         4.599968e-287
-    ## dotsReceiverOther              7.397540e-21
-    ## time_hours:dotsIncentivecheat  1.397365e-11
+    ## time_hours                     1.037201e-04
+    ## dotsIncentivecheat            3.403748e-249
+    ## dotsN                         1.016106e-289
+    ## dotsReceiverOther              1.066123e-21
+    ## time_hours:dotsIncentivecheat  1.537368e-18
     ##                                                   2.5 %       97.5 %
-    ## (Intercept)                   2560.3328540 1773.5643810 3696.1186150
-    ## time_hours                       1.4921435    1.0318959    2.1576712
-    ## dotsIncentivecheat               0.1462806    0.1306040    0.1638388
-    ## dotsN                            0.6313406    0.6158171    0.6472553
-    ## dotsReceiverOther                1.4411218    1.3350490    1.5556223
-    ## time_hours:dotsIncentivecheat    0.2537161    0.1704515    0.3776549
-    ## [1] "BIC-based Bayes Factor: 67345453.2"
+    ## (Intercept)                   3181.0632066 2182.7389572 4635.9932739
+    ## time_hours                       2.4288216    1.5516762    3.8018077
+    ## dotsIncentivecheat               0.1349183    0.1200881    0.1515799
+    ## dotsN                            0.6231009    0.6074200    0.6391866
+    ## dotsReceiverOther                1.4619668    1.3525671    1.5802151
+    ## time_hours:dotsIncentivecheat    0.1564001    0.1033969    0.2365738
+    ## [1] "BIC-based Bayes Factor: 464100942392028"
 
-Is there a cognitive depletion on the ability to do the task?
+Is there a time-effect on the ability to do the task (depletion or
+learning)?
 
 ``` r
 LRT_binom(subset(D_time, dotsIncentive == 'accuracy'),
-          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~          1 + dotsN + dotsReceiver + (span|id))
+          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~          1 + dotsN + dotsReceiver + (time_hours|id))
 ```
-
-    ## singular fit
 
     ## Data: D
     ## Models:
-    ## fit.null: dotsCorrect ~ 1 + dotsN + dotsReceiver + (span | id)
-    ## fit.full: dotsCorrect ~ time_hours + dotsN + dotsReceiver + (span | id)
-    ##          Df    AIC    BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)  
-    ## fit.null  6 2735.8 2773.9 -1361.9   2723.8                           
-    ## fit.full  7 2732.0 2776.5 -1359.0   2718.0 5.7883      1    0.01613 *
+    ## fit.null: dotsCorrect ~ 1 + dotsN + dotsReceiver + (time_hours | id)
+    ## fit.full: dotsCorrect ~ time_hours + dotsN + dotsReceiver + (time_hours | 
+    ## fit.full:     id)
+    ##          Df  AIC    BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)  
+    ## fit.null  6 2725 2763.2 -1356.5     2713                           
+    ## fit.full  7 2723 2767.5 -1354.5     2709 4.0228      1    0.04489 *
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ##                     Estimate Std. Error    z value     Pr(>|z|)
-    ## (Intercept)        9.5430518 0.49502419  19.277950 8.227225e-83
-    ## time_hours         0.4505167 0.18535878   2.430512 1.507751e-02
-    ## dotsN             -0.5671305 0.03694904 -15.348991 3.597356e-53
-    ## dotsReceiverOther -0.4698960 0.10358189  -4.536469 5.720382e-06
+    ## (Intercept)        9.7053821 0.51432653  18.870079 2.009982e-79
+    ## time_hours         0.5315689 0.26309918   2.020413 4.334061e-02
+    ## dotsN             -0.5749659 0.03817012 -15.063247 2.825625e-51
+    ## dotsReceiverOther -0.4782920 0.10681479  -4.477769 7.542719e-06
     ##                                       2.5 %       97.5 %
-    ## (Intercept)       1.394745e+04 5286.0270837 3.680104e+04
-    ## time_hours        1.569123e+00    1.0911369 2.256496e+00
-    ## dotsN             5.671505e-01    0.5275301 6.097466e-01
-    ## dotsReceiverOther 6.250672e-01    0.5102202 7.657655e-01
-    ## [1] "BIC-based Bayes Factor: 3.6*"
+    ## (Intercept)       1.640567e+04 5986.8498545 4.495618e+04
+    ## time_hours        1.701600e+00    1.0160311 2.849757e+00
+    ## dotsN             5.627241e-01    0.5221617 6.064374e-01
+    ## dotsReceiverOther 6.198412e-01    0.5027586 7.641900e-01
+    ## [1] "BIC-based Bayes Factor: 8.7*"
+
+Is there a time-effect on the “ability to cheat”, i.e., does cheating
+increase over time?
 
 ``` r
 LRT_binom(subset(D_time, dotsIncentive == 'cheat'),
-          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~          1 + dotsN + dotsReceiver + (span|id))
+          dotsCorrect ~ time_hours + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~          1 + dotsN + dotsReceiver + (time_hours|id))
 ```
-
-    ## singular fit
-    ## singular fit
 
     ## Data: D
     ## Models:
-    ## fit.null: dotsCorrect ~ 1 + dotsN + dotsReceiver + (span | id)
-    ## fit.full: dotsCorrect ~ time_hours + dotsN + dotsReceiver + (span | id)
-    ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)    
-    ## fit.null  6 13257 13302 -6622.7    13245                             
-    ## fit.full  7 13068 13120 -6526.8    13054 191.81      1  < 2.2e-16 ***
+    ## fit.null: dotsCorrect ~ 1 + dotsN + dotsReceiver + (time_hours | id)
+    ## fit.full: dotsCorrect ~ time_hours + dotsN + dotsReceiver + (time_hours | 
+    ## fit.full:     id)
+    ##          Df   AIC   BIC  logLik deviance Chisq Chi Df Pr(>Chisq)    
+    ## fit.null  6 12666 12710 -6326.8    12654                            
+    ## fit.full  7 12633 12685 -6309.4    12619 34.98      1  3.331e-09 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ##                     Estimate Std. Error   z value      Pr(>|z|)
-    ## (Intercept)        6.2825431 0.20595493  30.50446 2.274325e-204
-    ## time_hours        -1.1317517 0.08253351 -13.71263  8.530506e-43
-    ## dotsN             -0.4960331 0.01460489 -33.96350 7.710082e-253
-    ## dotsReceiverOther  0.5571500 0.04462082  12.48632  8.865825e-36
-    ##                                     2.5 %      97.5 %
-    ## (Intercept)       535.1478831 357.4083224 801.2775273
-    ## time_hours          0.3224679   0.2743051   0.3790872
-    ## dotsN               0.6089415   0.5917576   0.6266243
-    ## dotsReceiverOther   1.7456901   1.5995059   1.9052346
-    ## [1] "BIC-based Bayes Factor: 3.96836816331594e+39"
+    ##                     Estimate Std. Error    z value      Pr(>|z|)
+    ## (Intercept)        6.5337405 0.21855013  29.895844 2.228443e-196
+    ## time_hours        -1.2893040 0.20868087  -6.178352  6.477397e-10
+    ## dotsN             -0.5238772 0.01523477 -34.386934 3.953495e-259
+    ## dotsReceiverOther  0.5991645 0.04610022  12.996997  1.272421e-38
+    ##                                     2.5 %       97.5 %
+    ## (Intercept)       687.9667455 448.2674882 1055.8388806
+    ## time_hours          0.2754624   0.1829923    0.4146597
+    ## dotsN               0.5922200   0.5747979    0.6101701
+    ## dotsReceiverOther   1.8205970   1.6633102    1.9927573
+    ## [1] "BIC-based Bayes Factor: 349479.9"
 
-Do the different difficulty levels cause different depletion?
+Do the different difficulty levels cause different time-effects?
 
 ``` r
 D_time$level_numeric = as.numeric(D_time$level)  # Numeric to make it ordered according to the hypothesis
 LRT_binom(subset(D_time, level_numeric != 4),  # Leave out the mixed group (1-7)
-          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (span|id) - time_hours:dotsIncentive:level_numeric)
+          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~ time_hours*dotsIncentive*level_numeric + dotsN + dotsReceiver + (time_hours|id) - time_hours:dotsIncentive:level_numeric)
 ```
 
     ## Data: D
     ## Models:
     ## fit.null: dotsCorrect ~ time_hours * dotsIncentive * level_numeric + dotsN + 
-    ## fit.null:     dotsReceiver + (span | id) - time_hours:dotsIncentive:level_numeric
+    ## fit.null:     dotsReceiver + (time_hours | id) - time_hours:dotsIncentive:level_numeric
     ## fit.full: dotsCorrect ~ time_hours * dotsIncentive * level_numeric + dotsN + 
-    ## fit.full:     dotsReceiver + (span | id)
-    ##          Df   AIC   BIC  logLik deviance Chisq Chi Df Pr(>Chisq)
-    ## fit.null 12 11386 11474 -5680.8    11362                        
-    ## fit.full 13 11385 11481 -5679.5    11359 2.477      1     0.1155
+    ## fit.full:     dotsReceiver + (time_hours | id)
+    ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)  
+    ## fit.null 12 11174 11262 -5575.1    11150                           
+    ## fit.full 13 11173 11269 -5573.6    11147 3.0072      1    0.08289 .
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ##                                                Estimate Std. Error
-    ## (Intercept)                                  8.09537994 0.33630953
-    ## time_hours                                   0.92813663 0.56431359
-    ## dotsIncentivecheat                          -1.90980306 0.16591224
-    ## level_numeric                               -0.09336831 0.13600829
-    ## dotsN                                       -0.46883324 0.01544610
-    ## dotsReceiverOther                            0.38180439 0.04723907
-    ## time_hours:dotsIncentivecheat               -2.65436334 0.61057945
-    ## time_hours:level_numeric                    -0.15030628 0.30752901
-    ## dotsIncentivecheat:level_numeric             0.03370660 0.09110211
-    ## time_hours:dotsIncentivecheat:level_numeric  0.52409230 0.33389177
+    ## (Intercept)                                  8.36567746 0.35066817
+    ## time_hours                                   1.42793698 0.71220738
+    ## dotsIncentivecheat                          -2.03376018 0.17095077
+    ## level_numeric                               -0.11797578 0.13980870
+    ## dotsN                                       -0.48094206 0.01583086
+    ## dotsReceiverOther                            0.40064178 0.04812384
+    ## time_hours:dotsIncentivecheat               -3.23206812 0.63000683
+    ## time_hours:level_numeric                    -0.20007712 0.37152557
+    ## dotsIncentivecheat:level_numeric             0.05337376 0.09355097
+    ## time_hours:dotsIncentivecheat:level_numeric  0.60006860 0.34381323
     ##                                                 z value      Pr(>|z|)
-    ## (Intercept)                                  24.0712181 5.005788e-128
-    ## time_hours                                    1.6447179  1.000280e-01
-    ## dotsIncentivecheat                          -11.5109229  1.162278e-30
-    ## level_numeric                                -0.6864899  4.924043e-01
-    ## dotsN                                       -30.3528641 2.303076e-202
-    ## dotsReceiverOther                             8.0823866  6.351141e-16
-    ## time_hours:dotsIncentivecheat                -4.3472858  1.378326e-05
-    ## time_hours:level_numeric                     -0.4887548  6.250153e-01
-    ## dotsIncentivecheat:level_numeric              0.3699870  7.113922e-01
-    ## time_hours:dotsIncentivecheat:level_numeric   1.5696472  1.164972e-01
+    ## (Intercept)                                  23.8563922 8.692013e-126
+    ## time_hours                                    2.0049455  4.496887e-02
+    ## dotsIncentivecheat                          -11.8967592  1.230328e-32
+    ## level_numeric                                -0.8438372  3.987604e-01
+    ## dotsN                                       -30.3800371 1.008237e-202
+    ## dotsReceiverOther                             8.3252251  8.416863e-17
+    ## time_hours:dotsIncentivecheat                -5.1302112  2.894172e-07
+    ## time_hours:level_numeric                     -0.5385285  5.902122e-01
+    ## dotsIncentivecheat:level_numeric              0.5705314  5.683173e-01
+    ## time_hours:dotsIncentivecheat:level_numeric   1.7453331  8.092691e-02
     ##                                                                 2.5 %
-    ## (Intercept)                                 3.279283e+03 1.696335e+03
-    ## time_hours                                  2.529791e+00 8.370281e-01
-    ## dotsIncentivecheat                          1.481096e-01 1.069937e-01
-    ## level_numeric                               9.108580e-01 6.977184e-01
-    ## dotsN                                       6.257319e-01 6.070725e-01
-    ## dotsReceiverOther                           1.464926e+00 1.335382e+00
-    ## time_hours:dotsIncentivecheat               7.034361e-02 2.125683e-02
-    ## time_hours:level_numeric                    8.604444e-01 4.709271e-01
-    ## dotsIncentivecheat:level_numeric            1.034281e+00 8.651518e-01
-    ## time_hours:dotsIncentivecheat:level_numeric 1.688925e+00 8.778114e-01
+    ## (Intercept)                                 4.297022e+03 2.161117e+03
+    ## time_hours                                  4.170087e+00 1.032555e+00
+    ## dotsIncentivecheat                          1.308426e-01 9.359133e-02
+    ## level_numeric                               8.887176e-01 6.757070e-01
+    ## dotsN                                       6.182007e-01 5.993138e-01
+    ## dotsReceiverOther                           1.492782e+00 1.358418e+00
+    ## time_hours:dotsIncentivecheat               3.947577e-02 1.148333e-02
+    ## time_hours:level_numeric                    8.186676e-01 3.952433e-01
+    ## dotsIncentivecheat:level_numeric            1.054824e+00 8.781106e-01
+    ## time_hours:dotsIncentivecheat:level_numeric 1.822244e+00 9.288640e-01
     ##                                                   97.5 %
-    ## (Intercept)                                 6339.3688959
-    ## time_hours                                     7.6459105
-    ## dotsIncentivecheat                             0.2050255
-    ## level_numeric                                  1.1891075
-    ## dotsN                                          0.6449649
-    ## dotsReceiverOther                              1.6070356
-    ## time_hours:dotsIncentivecheat                  0.2327828
-    ## time_hours:level_numeric                       1.5721428
-    ## dotsIncentivecheat:level_numeric               1.2364736
-    ## time_hours:dotsIncentivecheat:level_numeric    3.2495228
-    ## [1] "BIC-based Bayes Factor: 31.3*"
+    ## (Intercept)                                 8543.9136162
+    ## time_hours                                    16.8413604
+    ## dotsIncentivecheat                             0.1829207
+    ## level_numeric                                  1.1688779
+    ## dotsN                                          0.6376829
+    ## dotsReceiverOther                              1.6404372
+    ## time_hours:dotsIncentivecheat                  0.1357042
+    ## time_hours:level_numeric                       1.6957068
+    ## dotsIncentivecheat:level_numeric               1.2670993
+    ## time_hours:dotsIncentivecheat:level_numeric    3.5748748
+    ## [1] "BIC-based Bayes Factor: 24*"
 
 Does perceived depletion alter the observed slope change?
 
 ``` r
 LRT_binom(subset(D_time, !is.na(subjectiveDepletion)),
-          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (span|id),
-          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (span|id) - time_hours:dotsIncentive:subjectiveDepletion)
+          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (time_hours|id),
+          dotsCorrect ~ time_hours*dotsIncentive*subjectiveDepletion + dotsN + dotsReceiver + (time_hours|id) - time_hours:dotsIncentive:subjectiveDepletion)
 ```
-
-    ## singular fit
-    ## singular fit
 
     ## Data: D
     ## Models:
     ## fit.null: dotsCorrect ~ time_hours * dotsIncentive * subjectiveDepletion + 
-    ## fit.null:     dotsN + dotsReceiver + (span | id) - time_hours:dotsIncentive:subjectiveDepletion
+    ## fit.null:     dotsN + dotsReceiver + (time_hours | id) - time_hours:dotsIncentive:subjectiveDepletion
     ## fit.full: dotsCorrect ~ time_hours * dotsIncentive * subjectiveDepletion + 
-    ## fit.full:     dotsN + dotsReceiver + (span | id)
+    ## fit.full:     dotsN + dotsReceiver + (time_hours | id)
     ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)
-    ## fit.null 12 16209 16301 -8092.4    16185                         
-    ## fit.full 13 16210 16310 -8091.9    16184 1.0509      1     0.3053
+    ## fit.null 12 15955 16047 -7965.3    15931                         
+    ## fit.full 13 15955 16055 -7964.4    15929 1.7432      1     0.1867
     ##                                                      Estimate Std. Error
-    ## (Intercept)                                        8.59935184 0.44085691
-    ## time_hours                                         0.75387171 0.86863983
-    ## dotsIncentivecheat                                -3.31898152 0.25939379
-    ## subjectiveDepletion                               -0.04239704 0.02140717
-    ## dotsN                                             -0.46187435 0.01291478
-    ## dotsReceiverOther                                  0.36154631 0.03960821
-    ## time_hours:dotsIncentivecheat                     -2.22491145 0.93493531
-    ## time_hours:subjectiveDepletion                    -0.02234942 0.04547804
-    ## dotsIncentivecheat:subjectiveDepletion             0.08053809 0.01369507
-    ## time_hours:dotsIncentivecheat:subjectiveDepletion  0.05065062 0.04908072
+    ## (Intercept)                                        8.85553737 0.45139750
+    ## time_hours                                         1.21811301 1.04677593
+    ## dotsIncentivecheat                                -3.40395359 0.26544792
+    ## subjectiveDepletion                               -0.04499732 0.02182453
+    ## dotsN                                             -0.47513907 0.01322155
+    ## dotsReceiverOther                                  0.37694676 0.04028311
+    ## time_hours:dotsIncentivecheat                     -2.96563389 0.96984983
+    ## time_hours:subjectiveDepletion                    -0.02393540 0.05477222
+    ## dotsIncentivecheat:subjectiveDepletion             0.08121250 0.01400200
+    ## time_hours:dotsIncentivecheat:subjectiveDepletion  0.06703069 0.05084884
     ##                                                       z value
-    ## (Intercept)                                        19.5059931
-    ## time_hours                                          0.8678761
-    ## dotsIncentivecheat                                -12.7951463
-    ## subjectiveDepletion                                -1.9805059
-    ## dotsN                                             -35.7632310
-    ## dotsReceiverOther                                   9.1280654
-    ## time_hours:dotsIncentivecheat                      -2.3797491
-    ## time_hours:subjectiveDepletion                     -0.4914332
-    ## dotsIncentivecheat:subjectiveDepletion              5.8808074
-    ## time_hours:dotsIncentivecheat:subjectiveDepletion   1.0319859
+    ## (Intercept)                                        19.6180471
+    ## time_hours                                          1.1636808
+    ## dotsIncentivecheat                                -12.8234327
+    ## subjectiveDepletion                                -2.0617777
+    ## dotsN                                             -35.9367128
+    ## dotsReceiverOther                                   9.3574390
+    ## time_hours:dotsIncentivecheat                      -3.0578279
+    ## time_hours:subjectiveDepletion                     -0.4369989
+    ## dotsIncentivecheat:subjectiveDepletion              5.8000628
+    ## time_hours:dotsIncentivecheat:subjectiveDepletion   1.3182344
     ##                                                        Pr(>|z|)
-    ## (Intercept)                                        9.764231e-85
-    ## time_hours                                         3.854622e-01
-    ## dotsIncentivecheat                                 1.745235e-37
-    ## subjectiveDepletion                                4.764671e-02
-    ## dotsN                                             4.120563e-280
-    ## dotsReceiverOther                                  6.973422e-20
-    ## time_hours:dotsIncentivecheat                      1.732443e-02
-    ## time_hours:subjectiveDepletion                     6.231201e-01
-    ## dotsIncentivecheat:subjectiveDepletion             4.082699e-09
-    ## time_hours:dotsIncentivecheat:subjectiveDepletion  3.020787e-01
+    ## (Intercept)                                        1.084397e-85
+    ## time_hours                                         2.445534e-01
+    ## dotsIncentivecheat                                 1.212128e-37
+    ## subjectiveDepletion                                3.922890e-02
+    ## dotsN                                             8.162865e-283
+    ## dotsReceiverOther                                  8.169272e-21
+    ## time_hours:dotsIncentivecheat                      2.229476e-03
+    ## time_hours:subjectiveDepletion                     6.621121e-01
+    ## dotsIncentivecheat:subjectiveDepletion             6.629010e-09
+    ## time_hours:dotsIncentivecheat:subjectiveDepletion  1.874252e-01
     ##                                                               
-    ## (Intercept)                                       5.428140e+03
-    ## time_hours                                        2.125212e+00
-    ## dotsIncentivecheat                                3.618967e-02
-    ## subjectiveDepletion                               9.584892e-01
-    ## dotsN                                             6.301015e-01
-    ## dotsReceiverOther                                 1.435547e+00
-    ## time_hours:dotsIncentivecheat                     1.080770e-01
-    ## time_hours:subjectiveDepletion                    9.778985e-01
-    ## dotsIncentivecheat:subjectiveDepletion            1.083870e+00
-    ## time_hours:dotsIncentivecheat:subjectiveDepletion 1.051955e+00
+    ## (Intercept)                                       7.013116e+03
+    ## time_hours                                        3.380802e+00
+    ## dotsIncentivecheat                                3.324159e-02
+    ## subjectiveDepletion                               9.560000e-01
+    ## dotsN                                             6.217986e-01
+    ## dotsReceiverOther                                 1.457827e+00
+    ## time_hours:dotsIncentivecheat                     5.152780e-02
+    ## time_hours:subjectiveDepletion                    9.763488e-01
+    ## dotsIncentivecheat:subjectiveDepletion            1.084601e+00
+    ## time_hours:dotsIncentivecheat:subjectiveDepletion 1.069328e+00
     ##                                                          2.5 %
-    ## (Intercept)                                       2.287668e+03
-    ## time_hours                                        3.872708e-01
-    ## dotsIncentivecheat                                2.176648e-02
-    ## subjectiveDepletion                               9.191055e-01
-    ## dotsN                                             6.143522e-01
-    ## dotsReceiverOther                                 1.328321e+00
-    ## time_hours:dotsIncentivecheat                     1.729477e-02
-    ## time_hours:subjectiveDepletion                    8.945050e-01
-    ## dotsIncentivecheat:subjectiveDepletion            1.055164e+00
-    ## time_hours:dotsIncentivecheat:subjectiveDepletion 9.554758e-01
+    ## (Intercept)                                       2.895215e+03
+    ## time_hours                                        4.345127e-01
+    ## dotsIncentivecheat                                1.975750e-02
+    ## subjectiveDepletion                               9.159691e-01
+    ## dotsN                                             6.058924e-01
+    ## dotsReceiverOther                                 1.347153e+00
+    ## time_hours:dotsIncentivecheat                     7.700234e-03
+    ## time_hours:subjectiveDepletion                    8.769661e-01
+    ## dotsIncentivecheat:subjectiveDepletion            1.055241e+00
+    ## time_hours:dotsIncentivecheat:subjectiveDepletion 9.678954e-01
     ##                                                         97.5 %
-    ## (Intercept)                                       1.287980e+04
-    ## time_hours                                        1.166245e+01
-    ## dotsIncentivecheat                                6.017014e-02
-    ## subjectiveDepletion                               9.995604e-01
-    ## dotsN                                             6.462545e-01
-    ## dotsReceiverOther                                 1.551430e+00
-    ## time_hours:dotsIncentivecheat                     6.753853e-01
-    ## time_hours:subjectiveDepletion                    1.069067e+00
-    ## dotsIncentivecheat:subjectiveDepletion            1.113357e+00
-    ## time_hours:dotsIncentivecheat:subjectiveDepletion 1.158177e+00
-    ## [1] "BIC-based Bayes Factor: 76*"
+    ## (Intercept)                                       1.698796e+04
+    ## time_hours                                        2.630492e+01
+    ## dotsIncentivecheat                                5.592827e-02
+    ## subjectiveDepletion                               9.977804e-01
+    ## dotsN                                             6.381223e-01
+    ## dotsReceiverOther                                 1.577593e+00
+    ## time_hours:dotsIncentivecheat                     3.448095e-01
+    ## time_hours:subjectiveDepletion                    1.086994e+00
+    ## dotsIncentivecheat:subjectiveDepletion            1.114779e+00
+    ## time_hours:dotsIncentivecheat:subjectiveDepletion 1.181391e+00
+    ## [1] "BIC-based Bayes Factor: 53.7*"
 
 Is the time-trend on cheating different for self- and other-receivers?
 
 ``` r
 LRT_binom(D_time,
-          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (span|id),
-          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (span|id) - time_hours:dotsIncentive:dotsReceiver)
+          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (time_hours|id),
+          dotsCorrect ~ time_hours*dotsIncentive*dotsReceiver + dotsN + (time_hours|id) - time_hours:dotsIncentive:dotsReceiver)
 ```
-
-    ## singular fit
 
     ## Data: D
     ## Models:
     ## fit.null: dotsCorrect ~ time_hours * dotsIncentive * dotsReceiver + dotsN + 
-    ## fit.null:     (span | id) - time_hours:dotsIncentive:dotsReceiver
+    ## fit.null:     (time_hours | id) - time_hours:dotsIncentive:dotsReceiver
     ## fit.full: dotsCorrect ~ time_hours * dotsIncentive * dotsReceiver + dotsN + 
-    ## fit.full:     (span | id)
+    ## fit.full:     (time_hours | id)
     ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)  
-    ## fit.null 11 16629 16714 -8303.3    16607                           
-    ## fit.full 12 16627 16719 -8301.3    16603 3.9785      1    0.04609 *
+    ## fit.null 11 16354 16439 -8166.0    16332                           
+    ## fit.full 12 16351 16444 -8163.4    16327 5.2546      1    0.02189 *
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ##                                                   Estimate Std. Error
-    ## (Intercept)                                      8.3262305 0.19897758
-    ## time_hours                                       0.7578943 0.28121083
-    ## dotsIncentivecheat                              -2.4260900 0.08694374
-    ## dotsReceiverOther                               -0.4828510 0.10603059
-    ## dotsN                                           -0.4630884 0.01275860
-    ## time_hours:dotsIncentivecheat                   -1.9137856 0.29982172
-    ## time_hours:dotsReceiverOther                    -0.4709064 0.38044129
-    ## dotsIncentivecheat:dotsReceiverOther             0.9755981 0.11445210
-    ## time_hours:dotsIncentivecheat:dotsReceiverOther  0.8252307 0.41025827
+    ## (Intercept)                                      8.5726009 0.20443510
+    ## time_hours                                       1.2970963 0.31083613
+    ## dotsIncentivecheat                              -2.5362182 0.08919651
+    ## dotsReceiverOther                               -0.5054036 0.10761557
+    ## dotsN                                           -0.4766138 0.01306894
+    ## time_hours:dotsIncentivecheat                   -2.4907815 0.30690999
+    ## time_hours:dotsReceiverOther                    -0.4991578 0.38519943
+    ## dotsIncentivecheat:dotsReceiverOther             1.0251493 0.11628185
+    ## time_hours:dotsIncentivecheat:dotsReceiverOther  0.9547203 0.41667790
     ##                                                    z value      Pr(>|z|)
-    ## (Intercept)                                      41.845070  0.000000e+00
-    ## time_hours                                        2.695111  7.036527e-03
-    ## dotsIncentivecheat                              -27.904134 2.377010e-171
-    ## dotsReceiverOther                                -4.553884  5.266447e-06
-    ## dotsN                                           -36.296185 1.858415e-288
-    ## time_hours:dotsIncentivecheat                    -6.383078  1.735629e-10
-    ## time_hours:dotsReceiverOther                     -1.237790  2.157940e-01
-    ## dotsIncentivecheat:dotsReceiverOther              8.524074  1.540376e-17
-    ## time_hours:dotsIncentivecheat:dotsReceiverOther   2.011491  4.427365e-02
+    ## (Intercept)                                      41.933117  0.000000e+00
+    ## time_hours                                        4.172926  3.007121e-05
+    ## dotsIncentivecheat                              -28.434053 7.674021e-178
+    ## dotsReceiverOther                                -4.696380  2.648133e-06
+    ## dotsN                                           -36.469208 3.413264e-291
+    ## time_hours:dotsIncentivecheat                    -8.115674  4.830951e-16
+    ## time_hours:dotsReceiverOther                     -1.295843  1.950297e-01
+    ## dotsIncentivecheat:dotsReceiverOther              8.816073  1.185438e-18
+    ## time_hours:dotsIncentivecheat:dotsReceiverOther   2.291267  2.194798e-02
     ##                                                                     2.5 %
-    ## (Intercept)                                     4.130817e+03 2.796829e+03
-    ## time_hours                                      2.133778e+00 1.229652e+00
-    ## dotsIncentivecheat                              8.838173e-02 7.453425e-02
-    ## dotsReceiverOther                               6.170218e-01 5.012416e-01
-    ## dotsN                                           6.293370e-01 6.137947e-01
-    ## time_hours:dotsIncentivecheat                   1.475209e-01 8.196808e-02
-    ## time_hours:dotsReceiverOther                    6.244360e-01 2.962482e-01
-    ## dotsIncentivecheat:dotsReceiverOther            2.652753e+00 2.119703e+00
-    ## time_hours:dotsIncentivecheat:dotsReceiverOther 2.282407e+00 1.021364e+00
+    ## (Intercept)                                     5.284857e+03 3.540118e+03
+    ## time_hours                                      3.658658e+00 1.989471e+00
+    ## dotsIncentivecheat                              7.916522e-02 6.646763e-02
+    ## dotsReceiverOther                               6.032621e-01 4.885438e-01
+    ## dotsN                                           6.208822e-01 6.051805e-01
+    ## time_hours:dotsIncentivecheat                   8.284520e-02 4.539678e-02
+    ## time_hours:dotsReceiverOther                    6.070417e-01 2.853226e-01
+    ## dotsIncentivecheat:dotsReceiverOther            2.787512e+00 2.219409e+00
+    ## time_hours:dotsIncentivecheat:dotsReceiverOther 2.597944e+00 1.148029e+00
     ##                                                       97.5 %
-    ## (Intercept)                                     6101.0698539
-    ## time_hours                                         3.7026818
-    ## dotsIncentivecheat                                 0.1048019
-    ## dotsReceiverOther                                  0.7595457
-    ## dotsN                                              0.6452729
-    ## time_hours:dotsIncentivecheat                      0.2654986
-    ## time_hours:dotsReceiverOther                       1.3161948
-    ## dotsIncentivecheat:dotsReceiverOther               3.3198518
-    ## time_hours:dotsIncentivecheat:dotsReceiverOther    5.1004162
-    ## [1] "BIC-based Bayes Factor: 17.8*"
+    ## (Intercept)                                     7.889486e+03
+    ## time_hours                                      6.728310e+00
+    ## dotsIncentivecheat                              9.428848e-02
+    ## dotsReceiverOther                               7.449182e-01
+    ## dotsN                                           6.369914e-01
+    ## time_hours:dotsIncentivecheat                   1.511853e-01
+    ## time_hours:dotsReceiverOther                    1.291519e+00
+    ## dotsIncentivecheat:dotsReceiverOther            3.501031e+00
+    ## time_hours:dotsIncentivecheat:dotsReceiverOther 5.879043e+00
+    ## [1] "BIC-based Bayes Factor: 9.4*"
 
-Supplementary stuff
-===================
+# Supplementary stuff
 
-A validity check: Equation correctness and reaction time
---------------------------------------------------------
+## A validity check: Equation correctness and reaction time
 
-(see the notebook on PGG for this) An important part of the complex span task is that subjects engage in the processing task, thereby preventing chunking- or rehearsal strategies. We provided a monetary incentive to do the processing task correctly.
+(see the notebook on PGG for this) An important part of the complex span
+task is that subjects engage in the processing task, thereby preventing
+chunking- or rehearsal strategies. We provided a monetary incentive to
+do the processing task correctly.
 
-Still, it is possible that some subjects would prioritize it lower in order to improve recall, and such behavior would undermine the purpose of using a complex span task, making it more like a simple forward letter span task.
+Still, it is possible that some subjects would prioritize it lower in
+order to improve recall, and such behavior would undermine the purpose
+of using a complex span task, making it more like a simple forward
+letter span task.
 
-We considered what indices would reveal such behavior. A priori, it is hard to distinguish between poor math skills and laziness. Similarly, it is difficult to distinguish between being a low-span subject or just not investing an effort to encode the items.
+We considered what indices would reveal such behavior. A priori, it is
+hard to distinguish between poor math skills and laziness. Similarly, it
+is difficult to distinguish between being a low-span subject or just not
+investing an effort to encode the items.
 
-However, short reaction times in combination with low accuracy would be one such index: poor performance and no effort (time) to improve it. We show the data for the equation tasks descriptively below using violin plots with 25% and 75% quartiles as well as (horizontally) jittered data.
+However, short reaction times in combination with low accuracy would be
+one such index: poor performance and no effort (time) to improve it. We
+show the data for the equation tasks descriptively below using violin
+plots with 25% and 75% quartiles as well as (horizontally) jittered
+data.
 
-Across tasks (PGG and Dots) and span levels (1-7), for all correctness levels where there is a considerable amount of data, the reaction times are highly similar. Only for correctness levels with very little data do we observe deviations from this, likely due to noise. We conclude that, to the best of our knowledge, the task was succesful in engaging subjects in processing.
+Across tasks (PGG and Dots) and span levels (1-7), for all correctness
+levels where there is a considerable amount of data, the reaction times
+are highly similar. Only for correctness levels with very little data do
+we observe deviations from this, likely due to noise. We conclude that,
+to the best of our knowledge, the task was succesful in engaging
+subjects in processing.
 
-FIrst, let's load the PGG data in here:
+FIrst, let’s load the PGG data in here:
 
 ``` r
 # Load the data.frame (not in csv because the matrix columns would be lost)
@@ -940,7 +983,7 @@ D_all$task = ifelse(D_all$exp %in% c(1,2), 'PGG', 'Dots')
 Now, for the actual analysis:
 
 ``` r
-fit = lmer(dotsRT ~ level + stimType + (1|id), subset(D, exp==4))
+fit = lmer(dotsRT ~ level + stimType + (1|id), subset(D_all, exp==4))
 
 #D.plot = subset(D_all, 
 ggplot(subset(D_all, equationRT < 10), aes(x=factor(round(equationCorrectness*100)), y=equationRT)) + 
@@ -954,21 +997,131 @@ ggplot(subset(D_all, equationRT < 10), aes(x=factor(round(equationCorrectness*10
   theme_bw(13)
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](morality_notebook_dots_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
 # TODO: Methods: RT for PGG
 #fit = lmer(pggRT ~ level + stimType + (1|id), subset(D, exp==2))
 ```
 
-Percieved load (questionnaire data)
------------------------------------
+If one wants to look at performance anyway (equations and recall), we
+can do that. First plot it:
 
-Mostly for exploratory reasons, we did ask subjects how they perceived the task with respect to frustration, stress, effort, difficulty, and satisfaction. Here, we explore whether subjects "felt" the difference in load.
+``` r
+# Recall
+tradeoff_recall = ggplot(D_pgg, aes(x=recallProportion, y=pggInvest)) + 
+  #geom_density2d() +
+  geom_jitter(width=0.05, height=0, alpha=0.05) + 
+  geom_smooth(color='red', method=lm) +
+  facet_wrap(~span, ncol=3) + 
+  labs(title='Recall and PGG investment')
 
-First, we turn to Experiment 2 and the Public Goods Game. The estimated differences between difficulty levels is very small (around 0.3) on a scale with range 6. If ignoring this quantitative observation, the effect seems to be that as you get to span 4 and above, the perceived load is constant.
+# Equations
+tradeoff_equation = ggplot(D_pgg, aes(x=equationCorrectness, y=pggInvest)) + 
+  #geom_density2d() +
+  geom_jitter(width=0.1, height=0, alpha=0.1) + 
+  geom_smooth(color='red', method=lm) +
+  facet_wrap(~span, ncol=3) + 
+  labs(title='Arithmetic and PGG investment')
 
-Again we see very small correspondences when considering the range-6 scale, but a large degree of the probability density is towards positive values.
+# All together now
+library(patchwork)
+tradeoff_recall + tradeoff_equation
+```
+
+![](morality_notebook_dots_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+Then inferentially:
+
+``` r
+LRT(D_pgg,
+    pggInvest ~ recallProportion  + equationCorrectness + stimType + time_hours + (span|id),
+    pggInvest ~                                         + stimType + time_hours + (span|id))
+```
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.0308827
+    ## (tol = 0.002, component 1)
+
+    ## Data: D
+    ## Models:
+    ## fit.null: pggInvest ~ +stimType + time_hours + (span | id)
+    ## fit.full: pggInvest ~ recallProportion + equationCorrectness + stimType + 
+    ## fit.full:     time_hours + (span | id)
+    ##          Df   AIC   BIC logLik deviance  Chisq Chi Df Pr(>Chisq)    
+    ## fit.null  7 78719 78769 -39353    78705                             
+    ## fit.full  9 78677 78740 -39329    78659 46.896      2  6.557e-11 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ##                        Estimate Std. Error   t value
+    ## (Intercept)          38.9911344   2.652091 14.702037
+    ## recallProportion      4.8223646   1.327090  3.633790
+    ## equationCorrectness   6.4234649   1.178004  5.452838
+    ## stimTypeLetters       0.8484201   3.678132  0.230666
+    ## time_hours          -15.1218557   2.613593 -5.785849
+    ##                                      2.5 %    97.5 %
+    ## (Intercept)          38.9911344  33.793132 44.189136
+    ## recallProportion      4.8223646   2.221317  7.423413
+    ## equationCorrectness   6.4234649   4.114620  8.732310
+    ## stimTypeLetters       0.8484201  -6.360587  8.057427
+    ## time_hours          -15.1218557 -20.244404 -9.999307
+    ## [1] "BIC-based Bayes Factor: 1774408.3"
+
+… and for the dots task:
+
+``` r
+LRT_binom(D_dots,
+    dotsCorrect ~ recallProportion + equationCorrectness + dotsIncentive + dotsN + stimType + (time_hours|id),
+    dotsCorrect ~                                      1 + dotsIncentive + dotsN + stimType + (time_hours|id))
+```
+
+    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl =
+    ## control$checkConv, : Model failed to converge with max|grad| = 0.00269189
+    ## (tol = 0.001, component 1)
+
+    ## Data: D
+    ## Models:
+    ## fit.null: dotsCorrect ~ 1 + dotsIncentive + dotsN + stimType + (time_hours | 
+    ## fit.null:     id)
+    ## fit.full: dotsCorrect ~ recallProportion + equationCorrectness + dotsIncentive + 
+    ## fit.full:     dotsN + stimType + (time_hours | id)
+    ##          Df   AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)  
+    ## fit.null  7 18075 18130 -9030.3    18061                           
+    ## fit.full  9 18074 18144 -9027.9    18056 4.8723      2     0.0875 .
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ##                         Estimate Std. Error      z value      Pr(>|z|)
+    ## (Intercept)          8.210625425 0.23106287  35.53416189 1.459478e-276
+    ## recallProportion    -0.139519336 0.07764113  -1.79697721  7.233924e-02
+    ## equationCorrectness  0.181872520 0.12313250   1.47704719  1.396630e-01
+    ## dotsIncentivecheat  -2.011372983 0.05672626 -35.45752860 2.220678e-275
+    ## dotsN               -0.461973279 0.01234848 -37.41135919 2.554002e-306
+    ## stimTypeLetters     -0.005207303 0.13325368  -0.03907812  9.688281e-01
+    ##                                         2.5 %       97.5 %
+    ## (Intercept)         3679.8432128 2339.6357222 5787.7583003
+    ## recallProportion       0.8697762    0.7469977    1.0127349
+    ## equationCorrectness    1.1994613    0.9422706    1.5268515
+    ## dotsIncentivecheat     0.1338048    0.1197254    0.1495400
+    ## dotsN                  0.6300392    0.6149737    0.6454738
+    ## stimTypeLetters        0.9948062    0.7661481    1.2917077
+    ## [1] "BIC-based Bayes Factor: 1621.4*"
+
+## Percieved load (questionnaire data)
+
+Mostly for exploratory reasons, we did ask subjects how they perceived
+the task with respect to frustration, stress, effort, difficulty, and
+satisfaction. Here, we explore whether subjects “felt” the difference in
+load.
+
+First, we turn to Experiment 2 and the Public Goods Game. The estimated
+differences between difficulty levels is very small (around 0.3) on a
+scale with range 6. If ignoring this quantitative observation, the
+effect seems to be that as you get to span 4 and above, the perceived
+load is constant.
+
+Again we see very small correspondences when considering the range-6
+scale, but a large degree of the probability density is towards positive
+values.
 
 ``` r
 perceived_load_cols = c('qStress', 'qDifficulty', 'qFrustration', 'qEffort', 'qSatisfied')
@@ -989,7 +1142,7 @@ ggplot(D_id_dots, aes(x=level, y=perceived_load)) +
   labs(x = 'Difficulty level (span)', y='Perceived load', title='Do participants perceive the objective load?')
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/supplementary%20questionnaire%20level-1.png)
+![](morality_notebook_dots_files/figure-gfm/supplementary%20questionnaire%20level-1.png)<!-- -->
 
 Test it inferentially:
 
@@ -999,10 +1152,9 @@ library(brms)
 
     ## Loading required package: Rcpp
 
-    ## Loading 'brms' package (version 2.6.3). Useful instructions
+    ## Loading 'brms' package (version 2.8.0). Useful instructions
     ## can be found by typing help('brms'). A more detailed introduction
     ## to the package is available through vignette('brms_overview').
-    ## Run theme_set(theme_default()) to use the default bayesplot theme.
 
     ## 
     ## Attaching package: 'brms'
@@ -1021,7 +1173,7 @@ result_level_dots = brm(perceived_load ~ level, D.analyse.dots)  # Quick: just r
     ## Start sampling
 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 1).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 1).
     ## Chain 1: 
     ## Chain 1: Gradient evaluation took 0 seconds
     ## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
@@ -1041,12 +1193,12 @@ result_level_dots = brm(perceived_load ~ level, D.analyse.dots)  # Quick: just r
     ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 1: 
-    ## Chain 1:  Elapsed Time: 0.058 seconds (Warm-up)
-    ## Chain 1:                0.059 seconds (Sampling)
-    ## Chain 1:                0.117 seconds (Total)
+    ## Chain 1:  Elapsed Time: 0.056 seconds (Warm-up)
+    ## Chain 1:                0.056 seconds (Sampling)
+    ## Chain 1:                0.112 seconds (Total)
     ## Chain 1: 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 2).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 2).
     ## Chain 2: 
     ## Chain 2: Gradient evaluation took 0 seconds
     ## Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
@@ -1066,12 +1218,12 @@ result_level_dots = brm(perceived_load ~ level, D.analyse.dots)  # Quick: just r
     ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 2: 
-    ## Chain 2:  Elapsed Time: 0.057 seconds (Warm-up)
-    ## Chain 2:                0.057 seconds (Sampling)
+    ## Chain 2:  Elapsed Time: 0.059 seconds (Warm-up)
+    ## Chain 2:                0.055 seconds (Sampling)
     ## Chain 2:                0.114 seconds (Total)
     ## Chain 2: 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 3).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 3).
     ## Chain 3: 
     ## Chain 3: Gradient evaluation took 0 seconds
     ## Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
@@ -1091,12 +1243,12 @@ result_level_dots = brm(perceived_load ~ level, D.analyse.dots)  # Quick: just r
     ## Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     ## Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 3: 
-    ## Chain 3:  Elapsed Time: 0.055 seconds (Warm-up)
-    ## Chain 3:                0.054 seconds (Sampling)
-    ## Chain 3:                0.109 seconds (Total)
+    ## Chain 3:  Elapsed Time: 0.06 seconds (Warm-up)
+    ## Chain 3:                0.057 seconds (Sampling)
+    ## Chain 3:                0.117 seconds (Total)
     ## Chain 3: 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 4).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 4).
     ## Chain 4: 
     ## Chain 4: Gradient evaluation took 0 seconds
     ## Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
@@ -1116,18 +1268,18 @@ result_level_dots = brm(perceived_load ~ level, D.analyse.dots)  # Quick: just r
     ## Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     ## Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 4: 
-    ## Chain 4:  Elapsed Time: 0.06 seconds (Warm-up)
-    ## Chain 4:                0.054 seconds (Sampling)
-    ## Chain 4:                0.114 seconds (Total)
+    ## Chain 4:  Elapsed Time: 0.059 seconds (Warm-up)
+    ## Chain 4:                0.064 seconds (Sampling)
+    ## Chain 4:                0.123 seconds (Total)
     ## Chain 4:
 
 ``` r
 plot(result_level_dots, pars='^b_')
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/supplementary%20brm%20perceived1-1.png)
+![](morality_notebook_dots_files/figure-gfm/supplementary%20brm%20perceived1-1.png)<!-- -->
 
-... and now for degree of cheating:
+… and now for degree of cheating:
 
 ``` r
 # Plot it
@@ -1137,7 +1289,7 @@ ggplot(D_id_dots, aes(x=dotsCorrect, y=perceived_load)) +
   labs(x='Dots correctness', y='Perceived load', title='Do participants cheat based on perceived load?')
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/supplementary%20questionnaire%20invest-1.png)
+![](morality_notebook_dots_files/figure-gfm/supplementary%20questionnaire%20invest-1.png)<!-- -->
 
 Test it inferentially:
 
@@ -1153,10 +1305,10 @@ result_cheat_dots = brm(perceived_load ~ dotsCorrect, D.analyse.dots)  # Simple 
     ## Start sampling
 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 1).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 1).
     ## Chain 1: 
-    ## Chain 1: Gradient evaluation took 0.001 seconds
-    ## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 10 seconds.
+    ## Chain 1: Gradient evaluation took 0 seconds
+    ## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
     ## Chain 1: Adjust your expectations accordingly!
     ## Chain 1: 
     ## Chain 1: 
@@ -1174,11 +1326,11 @@ result_cheat_dots = brm(perceived_load ~ dotsCorrect, D.analyse.dots)  # Simple 
     ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 1: 
     ## Chain 1:  Elapsed Time: 0.049 seconds (Warm-up)
-    ## Chain 1:                0.083 seconds (Sampling)
-    ## Chain 1:                0.132 seconds (Total)
+    ## Chain 1:                0.051 seconds (Sampling)
+    ## Chain 1:                0.1 seconds (Total)
     ## Chain 1: 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 2).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 2).
     ## Chain 2: 
     ## Chain 2: Gradient evaluation took 0 seconds
     ## Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
@@ -1198,12 +1350,12 @@ result_cheat_dots = brm(perceived_load ~ dotsCorrect, D.analyse.dots)  # Simple 
     ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 2: 
-    ## Chain 2:  Elapsed Time: 0.06 seconds (Warm-up)
-    ## Chain 2:                0.07 seconds (Sampling)
-    ## Chain 2:                0.13 seconds (Total)
+    ## Chain 2:  Elapsed Time: 0.049 seconds (Warm-up)
+    ## Chain 2:                0.061 seconds (Sampling)
+    ## Chain 2:                0.11 seconds (Total)
     ## Chain 2: 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 3).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 3).
     ## Chain 3: 
     ## Chain 3: Gradient evaluation took 0 seconds
     ## Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
@@ -1223,12 +1375,12 @@ result_cheat_dots = brm(perceived_load ~ dotsCorrect, D.analyse.dots)  # Simple 
     ## Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     ## Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 3: 
-    ## Chain 3:  Elapsed Time: 0.053 seconds (Warm-up)
-    ## Chain 3:                0.052 seconds (Sampling)
-    ## Chain 3:                0.105 seconds (Total)
+    ## Chain 3:  Elapsed Time: 0.054 seconds (Warm-up)
+    ## Chain 3:                0.068 seconds (Sampling)
+    ## Chain 3:                0.122 seconds (Total)
     ## Chain 3: 
     ## 
-    ## SAMPLING FOR MODEL 'f728419b4678f4eadd8cdc452682f134' NOW (CHAIN 4).
+    ## SAMPLING FOR MODEL 'b94071416f3a7b8410afdbf79caf67f5' NOW (CHAIN 4).
     ## Chain 4: 
     ## Chain 4: Gradient evaluation took 0 seconds
     ## Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
@@ -1248,13 +1400,13 @@ result_cheat_dots = brm(perceived_load ~ dotsCorrect, D.analyse.dots)  # Simple 
     ## Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
     ## Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
     ## Chain 4: 
-    ## Chain 4:  Elapsed Time: 0.05 seconds (Warm-up)
-    ## Chain 4:                0.049 seconds (Sampling)
-    ## Chain 4:                0.099 seconds (Total)
+    ## Chain 4:  Elapsed Time: 0.052 seconds (Warm-up)
+    ## Chain 4:                0.063 seconds (Sampling)
+    ## Chain 4:                0.115 seconds (Total)
     ## Chain 4:
 
 ``` r
 plot(result_cheat_dots, pars='b_dotsCorrect')
 ```
 
-![](morality_notebook_dots_files/figure-markdown_github/supplementary%20brm%20perceived2-1.png)
+![](morality_notebook_dots_files/figure-gfm/supplementary%20brm%20perceived2-1.png)<!-- -->
