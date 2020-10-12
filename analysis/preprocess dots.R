@@ -1,16 +1,16 @@
 library(tidyverse)
 source('misc/functions preprocess.R')
 
-##########################
-# LOAD DATA FROM EXP 3+4 #
-##########################
+###############################
+# LOAD DATA FROM EXP 2 (DOTS) #
+###############################
 
 # This is in a much nicer format given the experience from exp 1+2, so less processing needed.
 # See how Dots-data (D2) was merged in the end of this script.
 D2 = read.table('data/dots_all.csv', sep='\t', header=T) %>%  # "D" for "DATA"
   mutate(
     dotsReceiver = factor(factor(dotsReceiver, labels=c('Other', 'Self')), levels=c('Self', 'Other')),  # New labels and label order
-    exp = ifelse(level == '1-7', 3, 4)
+    exp_part = ifelse(level == '1-7', "dots_concurrent", "dots_cumulative")
   ) %>%
   
   # Call preprocessing functions

@@ -1,0 +1,296 @@
+---
+title: "Morality in the time of cognitive famine - General supplementary"
+author: "Jonas Kristoffer Lindeløv"
+date: "December, 2018"
+---
+
+The following analyses are not necessarily bound to one particular experiment, and are not simple extensions of analyses in the main manuscript.
+
+```{r}
+library(dplyr)
+library(lme4)
+library(ggplot2)
+source("misc/functions inference.R")
+```
+
+
+
+## A validity check: Equation correctness and reaction time
+(see the notebook on PGG for this)
+An important part of the complex span task is that subjects engage in the processing task, thereby preventing chunking- or rehearsal strategies. We provided a monetary incentive to do the processing task correctly. 
+
+Still, it is possible that some subjects would prioritize it lower in order to improve recall, and such behavior would undermine the purpose of using a complex span task, making it more like a simple forward letter span task.
+
+We considered what indices would reveal such behavior. A priori, it is hard to distinguish between poor math skills and laziness. Similarly, it is difficult to distinguish between being a low-span subject or just not investing an effort to encode the items. 
+
+However, short reaction times in combination with low accuracy would be one such index: poor performance and no effort (time) to improve it. We show the data for the equation tasks descriptively below using violin plots with 25% and 75% quartiles as well as (horizontally) jittered data.
+
+Across tasks (PGG and Dots) and span levels (1-7), for all correctness levels where there is a considerable amount of data, the reaction times are highly similar. Only for correctness levels with very little data do we observe deviations from this, likely due to noise. We conclude that, to the best of our knowledge, the task was succesful in engaging subjects in processing.
+
+FIrst, let's load the PGG data in here:
+
+```{r load data}
+# Load the PGG (not in csv because the matrix columns would be lost)
+D_pgg = readRDS('data/pgg.Rda')
+D_pgg = subset(D_pgg, condition=='experiment')  # Remove practice, etc.
+D_pgg = select(D_pgg, -encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and we won't be using them
+D_pgg = droplevels(D_pgg)
+
+# Load Dots
+D_dots = readRDS('data/dots.Rda')
+D_dots = droplevels(subset(D_dots, condition == 'experiment'))  # Not practice, etc
+D_dots = select(D_dots, -encode, -equationCorrect, -equationScores, -equationRTs, -recallAns, -equationAnss)  # Tidyr doesn't like these matrix columns and
+D_dots = droplevels(D_dots)
+
+# And merge together:
+D_all = plyr::rbind.fill(D_dots, D_pgg)  # All together now!
+D_all$task = ifelse(D_all$exp_part %in% c("pgg_concurrent","pgg_cumulative"), yes='PGG', no='Dots')
+```
+
+
+
+Now, for the actual analysis:
+```{r suppl_plotboth}
+fit = lmer(dotsRT ~ level + stimType + (1|id), subset(D_all, exp_part=="dots_cumulative"))
+
+#D.plot = subset(D_all, 
+ggplot(subset(D_all, equationRT < 10), aes(x=factor(round(equationCorrectness*100)), y=equationRT)) + 
+  #stat_summary(fun.data=mean_cl_boot) + 
+  geom_jitter(width=0.3, height=0, alpha=0.2) +   # Only jitter width
+  geom_violin(draw_quantiles = c(0.25, 0.75), alpha=0.5, scale='width') + 
+  facet_grid(task~span, scales='free') + 
+  #coord_cartesian(ylim=c(0, 7)) + 
+  labs(x='Correctness', y='Reaction time', title='Equation performance') + 
+  #scale_x_continuous(breaks= scales::pretty_breaks()) +
+  theme_bw(13)
+
+# TODO: Methods: RT for PGG
+#fit = lmer(pggRT ~ level + stimType + (1|id), subset(D, exp_part=="pgg_cumulative"))
+
+```
+
+If one wants to look at performance anyway (equations and recall), we can do that. First plot it:
+```{r}
+# Recall
+tradeoff_recall = ggplot(D_pgg, aes(x=recallProportion, y=pggInvest)) + 
+  #geom_density2d() +
+  geom_jitter(width=0.05, height=0, alpha=0.05) + 
+  geom_smooth(color='red', method=lm) +
+  facet_wrap(~span, ncol=3) + 
+  labs(title='Recall and PGG investment')
+
+# Equations
+tradeoff_equation = ggplot(D_pgg, aes(x=equationCorrectness, y=pggInvest)) + 
+  #geom_density2d() +
+  geom_jitter(width=0.1, height=0, alpha=0.1) + 
+  geom_smooth(color='red', method=lm) +
+  facet_wrap(~span, ncol=3) + 
+  labs(title='Arithmetic and PGG investment')
+
+# All together now
+library(patchwork)
+tradeoff_recall + tradeoff_equation
+```
+
+Then inferentially:
+```{r suppl_pgg}
+LRT(D_pgg,
+    pggInvest ~ recallProportion  + equationCorrectness + stimType + time_hours + (span|id),
+    pggInvest ~                                         + stimType + time_hours + (span|id))
+```
+
+
+... and for the dots task:
+```{r suppl_dots}
+LRT_binom(D_dots,
+          dotsCorrect ~ recallProportion + equationCorrectness + dotsIncentive + dotsN + stimType + (time_hours|id),
+          dotsCorrect ~                                      1 + dotsIncentive + dotsN + stimType + (time_hours|id))
+```
+
+
+
+## Percieved load (questionnaire data)
+Mostly for exploratory reasons, we did ask subjects how they perceived the task with respect to frustration, stress, effort, difficulty, and satisfaction. Here, we explore whether subjects "felt" the difference in load. 
+
+First, we turn to the prolonged (differential) load conditions in experiment 1 (Public Goods Game). The estimated differences between difficulty levels is very small (around 0.3) on a scale with range 6. If ignoring this quantitative observation, the effect seems to be that as you get to span 4 and above, the perceived load is constant.
+
+Again we see very small correspondences when considering the range-6 scale, but a large degree of the probability density is towards positive values.
+
+```{r supplementary questionnaire level, message=F, warning=F}
+perceived_load_cols = c('qStress', 'qDifficulty', 'qFrustration', 'qEffort', 'qSatisfied')
+
+# Summarise per subject
+D_id_dots = D_dots %>%
+  mutate(qSatisfied = 1 + (7 - qSatisfied),  # Same direction as other questions
+         perceived_load = rowMeans(select(D_dots, perceived_load_cols))) %>%  # Mean of load ratings
+  group_by(id, level) %>%
+  filter(dotsReceiver=='Self' & dotsIncentive == 'cheat') %>%
+  summarise(dotsCorrect = mean(dotsCorrect, na.rm=T),
+            perceived_load = mean(perceived_load))
+
+# Plot the relationship
+ggplot(D_id_dots, aes(x=level, y=perceived_load)) + 
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) + 
+  geom_jitter(width=0.2, height=0) +
+  labs(x = 'Difficulty level (span)', y='Perceived load', title='Do participants perceive the objective load?')
+```
+
+Test it inferentially:
+```{r supplementary brm perceived1, cache=TRUE}
+library(brms)
+D.analyse.dots = filter(D_id_dots, level !='1-7' & !is.na(perceived_load))  # ... and no NA data
+result_level_dots = brm(perceived_load ~ level, D.analyse.dots)  # Quick: just run with the defaults
+plot(result_level_dots, pars='^b_')
+```
+
+
+... and now for degree of cheating:
+  
+```{r supplementary questionnaire invest, cache=TRUE, message=F, warning=F}
+# Plot it
+ggplot(D_id_dots, aes(x=dotsCorrect, y=perceived_load)) + 
+  geom_point() +
+  geom_smooth(method='lm') +
+  labs(x='Dots correctness', y='Perceived load', title='Do participants cheat based on perceived load?')
+```
+
+Test it inferentially:
+```{r supplementary brm perceived2, cache=TRUE}
+# Inferentially
+result_cheat_dots = brm(perceived_load ~ dotsCorrect, D.analyse.dots)  # Simple linear regression
+plot(result_cheat_dots, pars='b_dotsCorrect')
+```
+
+
+## Load and accuracy
+Our inferences assume that span indexes load, i.e., that higher spans load participants more. One way to check this is to see whether higher span decreases recall accuracy, as an indication taht participant's working memory was over-loaded. The plot below shows that higher load did indeed cause lower accuracy on average (dots and 95% bootstrapped error bars), and also for many individual participants (lines are means). The slope is approximately identical in all conditions. This is congruent with out finding that there as little effect of time on performance. Note that the chance level is low as there were 12 response options, and they had to be selected in the correct order.
+
+```{r}
+ggplot(D_all, aes(x = span, y = recallProportion)) + 
+  # Individual participants
+  stat_summary(aes(color = id), fun.y = mean, geom = "line", alpha = 0.3) + 
+  
+  # Average
+  stat_summary(fun.data = mean_cl_boot, geom = "pointrange", lwd = 0.5) + 
+  
+  # Layout and theming
+  facet_grid(task~level, scales = "free_x") +
+  coord_cartesian(ylim = c(0.5, 1)) + 
+  scale_x_continuous(breaks = c(1:7)) +
+  theme(legend.position = "none") +  # Do not show legend for participants
+  labs(y = "Accuracy (proportion correctly recalled)", x = "Span", title = "Load and accuracy")
+
+ggsave("figures/Figure S13 - Load and accuracy.png", width = 6, height = 4)
+```
+
+
+
+```{r load_and_experience}
+# Get one row per participant per question answer
+D_q = D_all %>%
+  group_by(id) %>%
+  summarise(
+    qFrustration = mean(qFrustration),
+    qStress = mean(qStress),
+    qDifficulty = mean(qDifficulty),
+    qEffort = mean(qEffort),
+    task = head(task, 1),
+    level = head(level, 1)
+  ) %>%
+  tidyr::pivot_longer(c("qFrustration", "qStress", "qDifficulty", "qEffort"))
+
+# Compute means for geom_vline (to make it respect faceting)
+D_q_means = D_q %>%
+  group_by(level, name) %>%
+  summarise(value = mean(value, na.rm = T))
+
+# Finally plot it
+ggplot(D_q, aes(x = value)) + 
+  geom_histogram(bins = 7) + 
+  geom_vline(aes(xintercept = value), data = D_q_means, size = 2) +
+  facet_grid(level~name) + 
+  labs(x = "Rating", title = "Experience and load")
+
+ggsave("figures/Figure S14 - Load and experience.png", width = 6, height = 4)
+```
+
+
+
+
+
+
+## High and low performers
+An improvement on the analysis above would be to code "load" not as the absolute span length of the trial, but rather the *difference* between the trial's span length and the individual's working memory capacity. Below, we provide code that does this.
+
+```{r}
+D_PGG = filter(D_all, level == "1-7", task == "PGG")
+
+library(mcp)
+model = list(
+  recallLocation | trials(span) ~ 1,
+  1 + (1|id) ~ 0 + span
+)
+```
+
+```{r suppl_mcp, cache=TRUE}
+model_str = "
+model {
+
+  # Priors for population-level effects
+  cp_0 = MINX  # mcp helper value.
+  cp_2 = MAXX  # mcp helper value.
+
+  cp_1 ~ dunif(MINX, MAXX)
+  cp_1_sd ~ dnorm(0, 1/((MAXX-MINX)/2)^2) T(0, )
+  int_1 ~ dunif(0.7, 1) 
+  span_2 ~ dunif(-0.5, 0)
+
+  # Priors for varying effects
+  for (id_ in 1:n_unique_id) {
+    cp_1_id_uncentered[id_] ~ dnorm(0, 1/(cp_1_sd)^2) T(MINX - cp_1, MAXX - cp_1)
+  }
+  cp_1_id = cp_1_id_uncentered - mean(cp_1_id_uncentered)  # vectorized zero-centering
+
+
+  # Model and likelihood
+  for (i_ in 1:length(span)) {
+    X_1_[i_] = min(span[i_], (cp_1 + cp_1_id[id[i_]]))
+    X_2_[i_] = min(span[i_], cp_2) - (cp_1 + cp_1_id[id[i_]])
+    
+    # Fitted value
+    y_[i_] = 
+    
+      # Segment 1: recallLocation | trials(span) ~ 1
+      (span[i_] >= cp_0) * int_1 + 
+    
+      # Segment 2: recallLocation | trials(span) ~ 1 + (1 | id) ~ 0 + span
+      (span[i_] >= (cp_1 + cp_1_id[id[i_]])) * span_2 * X_2_[i_] 
+
+    # Likelihood and log-density for family = binomial()
+    recallLocation[i_] ~ dbin(y_[i_], span[i_])
+    loglik_[i_] = logdensity.bin(recallLocation[i_], y_[i_], span[i_])
+  }
+}"
+
+fit_str = mcp(model, data = D_PGG, family = binomial(), cores = 5, chains = 5, adapt = 500, iter = 1000, jags_code = model_str)
+```
+
+Graphically:
+```{r plot_mcp, fig.width=12, fig.height=12}
+plot(fit_str, facet_by = "id")
+```
+
+
+Numerically (in descending order of estimated participant span):
+```{r}
+library(dplyr)
+mcp:::tidy_samples(fit_str, varying = TRUE, population = FALSE, absolute = TRUE) %>%
+  group_by(id) %>%
+  summarise(
+    mean = mean(cp_1_id),
+    lower = quantile(cp_1_id, 0.025),
+    upper = quantile(cp_1_id, 0.975)
+  ) %>%
+  arrange(desc(mean))
+```
+

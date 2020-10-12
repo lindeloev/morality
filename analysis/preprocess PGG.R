@@ -1,12 +1,12 @@
 library(tidyverse)
 source('misc/functions preprocess.R')
 
-################################
-# PREPROCESS DATA FROM EXP 1+2 #
-################################
+####################################
+# PREPROCESS DATA FROM EXP 1 (PGG) #
+####################################
 D1 = read.csv('data/pgg_all.csv', sep='\t') %>%  # data file containing all trials by all subjects
   mutate(
-    exp = ifelse(level == '1-7', 1, 2)
+    exp_part = ifelse(level == '1-7', "pgg_concurrent", "pgg_cumulative")
   ) %>%
   
   # Restructure and add info

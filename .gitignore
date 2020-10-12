@@ -1,7 +1,10 @@
 .Rproj.user
-.Rhistory
-.RData
+analysis/.Rhistory
+analysis/.RData
 delete
 
 analysis/morality_notebook_dots_cache
+analysis/morality_notebook_dots_files
 analysis/morality_notebook_pgg_cache
+analysis/morality_notebook_generalsupplementary_cache
+analysis/morality_notebook_generalsupplementary_files
